@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.machine_a_lire">
+    package="com.digital4better.malo">
    <application
         android:label="Machine à Lire"
         android:icon="@mipmap/ic_launcher">

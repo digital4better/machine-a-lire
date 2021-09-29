@@ -1,6 +1,6 @@
 {
-    "name": "machine_a_lire",
-    "short_name": "machine_a_lire",
+    "name": "malo",
+    "short_name": "malo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

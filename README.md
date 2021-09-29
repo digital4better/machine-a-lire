@@ -1,6 +1,6 @@
-# machine_a_lire
+# MALO
 
-A new Flutter project.
+La Machine A Lire Open source.
 
 ## Getting Started
 
@@ -14,3 +14,13 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+Dependencies :
+- https://pub.dev/packages/edge_detection
+- https://pub.dev/packages/flutter_tesseract_ocr
+
+Resources : 
+- https://dropbox.tech/machine-learning/fast-and-accurate-document-detection-for-scanning
+- https://github.com/flutter-clutter/flutter-simple-edge-detection
+- https://www.flutterclutter.dev/flutter/tutorials/implementing-edge-detection-in-flutter/2020/1509/
+- https://developer.apple.com/documentation/vision/vndetectrectanglesrequest
