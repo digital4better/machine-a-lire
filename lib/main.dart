@@ -33,8 +33,7 @@ class MyApp extends StatelessWidget {
       child: CustomPaint(
       foregroundPainter: PolyPainter(),
       child:   GestureDetector(
-          //child: Container(color: Colors.yellow.shade600),
-          child: CameraScreen(camera: cameras.first),
+          child: cameras.length > 0 ? CameraScreen(camera: cameras.first) : Container(),
           onTap: () {
             tts.stop();
             tts.speak("Début de la lecture");
@@ -65,12 +64,12 @@ class PolyPainter extends CustomPainter {
 }
 
 class CameraScreen extends StatefulWidget {
+  final CameraDescription camera;
+
   const CameraScreen({
     Key? key,
-    required this.camera,
+    required this.camera
   }) : super(key: key);
-
-  final CameraDescription camera;
 
   @override
   CameraScreenState createState() => CameraScreenState();
@@ -79,12 +78,31 @@ class CameraScreen extends StatefulWidget {
 class CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
+  bool _isDetecting = false;
 
   @override
   void initState() {
     super.initState();
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
     _controller = CameraController(widget.camera, ResolutionPreset.medium);
     _initializeControllerFuture = _controller.initialize();
+    _initializeControllerFuture.then((_) => {
+      _controller.startImageStream((CameraImage image) {
+        if (_isDetecting) return;
+        _isDetecting = true;
+        try {
+          stdout.writeln("Detecting image ${image.format.group} - ${image.planes.length}");
+          // await doOpenCVDectionHere(image)
+        } catch (e) {
+          // await handleExepction(e)
+        } finally {
+          _isDetecting = false;
+        }
+      })
+    });
   }
 
   @override
