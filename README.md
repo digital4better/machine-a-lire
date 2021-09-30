@@ -24,3 +24,4 @@ Resources :
 - https://github.com/flutter-clutter/flutter-simple-edge-detection
 - https://www.flutterclutter.dev/flutter/tutorials/implementing-edge-detection-in-flutter/2020/1509/
 - https://developer.apple.com/documentation/vision/vndetectrectanglesrequest
+- https://hochgatterer.me/blog/invoice-scanning/

@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:malo/opencv.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -28,57 +30,56 @@ class MyApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: CustomPaint(
-      foregroundPainter: PolyPainter(),
-      child:   GestureDetector(
-          child: cameras.length > 0 ? CameraScreen(camera: cameras.first) : Container(),
-          onTap: () {
-            tts.stop();
-            tts.speak("Début de la lecture");
-          }
-      )
-  ));
+  Widget build(BuildContext context) => MaterialApp(
+      home:  cameras.length > 0 ? Vision(camera: cameras.first) : Container()
+  );
 }
 
 class PolyPainter extends CustomPainter {
 
+  PolyPainter({
+    this.quad,
+  });
+
+  Quad? quad;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Color.fromARGB(255, 255, 255, 0);
-    final path = Path()
-      ..moveTo(100, 250)
-      ..lineTo(50, 600)
-      ..lineTo(400, 620)
-      ..lineTo(340, 240)
-      ..close();
-    canvas.drawPath(path, paint);
+    if (this.quad != null) {
+      final path = Path()
+        ..moveTo(this.quad!.x1 * size.width, this.quad!.y1 * size.height)
+        ..lineTo(this.quad!.x2 * size.width, this.quad!.y2 * size.height)
+        ..lineTo(this.quad!.x4 * size.width, this.quad!.y4 * size.height)
+        ..lineTo(this.quad!.x3 * size.width, this.quad!.y3 * size.height)
+        ..close();
+      canvas.drawRect(Offset(0, 0) & size, Paint()..color = Color.fromARGB(200, 0, 0, 0));
+      canvas.drawPath(path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
+    }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+    return true;
   }
 }
 
-class CameraScreen extends StatefulWidget {
+class Vision extends StatefulWidget {
   final CameraDescription camera;
 
-  const CameraScreen({
+  const Vision({
     Key? key,
     required this.camera
   }) : super(key: key);
 
   @override
-  CameraScreenState createState() => CameraScreenState();
+  VisionState createState() => VisionState();
 }
 
-class CameraScreenState extends State<CameraScreen> {
+class VisionState extends State<Vision> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
   bool _isDetecting = false;
+  Quad? quad;
 
   @override
   void initState() {
@@ -87,17 +88,22 @@ class CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _initCamera() async {
-    _controller = CameraController(widget.camera, ResolutionPreset.medium);
+    _controller = CameraController(
+        widget.camera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.bgra8888
+    );
     _initializeControllerFuture = _controller.initialize();
     _initializeControllerFuture.then((_) => {
-      _controller.startImageStream((CameraImage image) {
+      _controller.startImageStream((CameraImage image) async {
         if (_isDetecting) return;
         _isDetecting = true;
         try {
-          stdout.writeln("Detecting image ${image.format.group} - ${image.planes.length}");
-          // await doOpenCVDectionHere(image)
-        } catch (e) {
-          // await handleExepction(e)
+          final result = detectQuad(image);
+          setState(() {
+            quad = result;
+          });
         } finally {
           _isDetecting = false;
         }
@@ -113,15 +119,23 @@ class CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _initializeControllerFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          return CameraPreview(_controller);
-        } else {
-          return Container();
-        }
-      },
+    return CustomPaint(
+        foregroundPainter: PolyPainter(quad : quad),
+        child: GestureDetector(
+            child: FutureBuilder<void>(
+              future: _initializeControllerFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return CameraPreview(_controller);
+                } else {
+                  return Container();
+                }
+              },
+            ),
+            onTap: () {
+
+            }
+        )
     );
   }
 }
