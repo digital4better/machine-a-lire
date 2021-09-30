@@ -46,7 +46,6 @@ struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     cv::Mat gray(img.size(), CV_8U);
 
     // Detect quads
-    std::vector<int> usedThresholdLevel;
     std::vector<std::vector<cv::Point>> quads;
     std::vector<std::vector<cv::Point> > contours;
 
@@ -74,7 +73,6 @@ struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
                 }
                 if (maxCosine < 0.3) {
                     quads.push_back(approx);
-                    usedThresholdLevel.push_back(thresholdLevel);
                 }
             }
         }
@@ -100,6 +98,12 @@ struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
         std::sort(quad->begin() + 2, quad->end(), orderX);
         float quadWidth = std::max((*quad)[3].x - (*quad)[0].x, (*quad)[1].x - (*quad)[2].x);
         float quadHeight = std::max((*quad)[3].y - (*quad)[0].y, (*quad)[1].y - (*quad)[2].y);
+        if (quadWidth < width / 5 || quadHeight < height / 5) {
+            continue;
+        }
+        if (quadWidth > width * 0.99 || quadHeight > height * 0.99) {
+            continue;
+        }
         if (quadWidth * quadHeight >= biggestWidth * biggestHeight) {
             biggest = quad;
             biggestWidth = quadWidth;
