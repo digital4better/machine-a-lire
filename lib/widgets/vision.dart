@@ -19,8 +19,8 @@ class QuadPainter extends CustomPainter {
       final path = Path()
         ..moveTo(this.quad!.x1 * size.width, this.quad!.y1 * size.height)
         ..lineTo(this.quad!.x2 * size.width, this.quad!.y2 * size.height)
-        ..lineTo(this.quad!.x4 * size.width, this.quad!.y4 * size.height)
         ..lineTo(this.quad!.x3 * size.width, this.quad!.y3 * size.height)
+        ..lineTo(this.quad!.x4 * size.width, this.quad!.y4 * size.height)
         ..close();
       canvas.drawRect(Offset(0, 0) & size, Paint()..color = Color.fromARGB(200, 0, 0, 0));
       canvas.drawPath(path, Paint()..color = Color.fromARGB(255, 255, 255, 255));

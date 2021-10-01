@@ -46,77 +46,45 @@ struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     cv::Mat gray(img.size(), CV_8U);
 
     // Detect quads
-    std::vector<std::vector<cv::Point>> quads;
     std::vector<std::vector<cv::Point> > contours;
+    double high = cv::threshold(img, gray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    double low = 0.5 * high;
 
-    int thresholdLevels[] = {10, 30, 50, 70};
-    for (int thresholdLevel : thresholdLevels) {
-        cv::Canny(img, gray, thresholdLevel, thresholdLevel * 3, 3);
-        cv::dilate(gray, gray, cv::Mat(), cv::Point(-1, -1));
-        cv::findContours(gray, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
-        std::vector<cv::Point> approx;
-        for (const auto & contour : contours) {
-            cv::approxPolyDP(cv::Mat(contour), approx, cv::arcLength(cv::Mat(contour), true) * 0.02, true);
-            if (approx.size() == 4 && std::fabs(cv::contourArea(cv::Mat(approx))) > 1000 &&
-                cv::isContourConvex(cv::Mat(approx))) {
-                double maxCosine = 0;
-                for (int j = 2; j < 5; j++) {
-                    cv::Point pt1 = approx[j % 4];
-                    cv::Point pt2 = approx[j - 2];
-                    cv::Point pt0 = approx[j - 1];
-                    double dx1 = pt1.x - pt0.x;
-                    double dy1 = pt1.y - pt0.y;
-                    double dx2 = pt2.x - pt0.x;
-                    double dy2 = pt2.y - pt0.y;
-                    double cosine = std::fabs((dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10));
-                    maxCosine = MAX(maxCosine, cosine);
-                }
-                if (maxCosine < 0.3) {
-                    quads.push_back(approx);
-                }
+	cv::Canny(img, gray, low, high);
+    cv::dilate(gray, gray, cv::Mat(), cv::Point(-1, -1));
+    cv::findContours(gray, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+    std::vector<cv::Point> approx;
+    std::vector<cv::Point> biggest;
+    float biggestArea = 0;
+    for (const auto & contour : contours) {
+        cv::approxPolyDP(cv::Mat(contour), approx, cv::arcLength(cv::Mat(contour), true) * 0.02, true);
+        float area = std::fabs(cv::contourArea(cv::Mat(approx)));
+        if (approx.size() == 4 && area > 10000 && cv::isContourConvex(cv::Mat(approx))) {
+            double maxCosine = 0;
+            for (int j = 2; j < 5; j++) {
+                cv::Point pt1 = approx[j % 4];
+                cv::Point pt2 = approx[j - 2];
+                cv::Point pt0 = approx[j - 1];
+                double dx1 = pt1.x - pt0.x;
+                double dy1 = pt1.y - pt0.y;
+                double dx2 = pt2.x - pt0.x;
+                double dy2 = pt2.y - pt0.y;
+                double cosine = std::fabs((dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10));
+                maxCosine = MAX(maxCosine, cosine);
+            }
+            if (maxCosine < 0.3 && biggestArea < area) {
+                biggest = approx;
+                biggestArea = area;
             }
         }
     }
-
-    // Select biggest quad
-    std::vector<cv::Point>* biggest = NULL;
-    float biggestWidth = 0;
-    float biggestHeight = 0;
-
-    // Sort clockwise
-    struct sortY {
-        bool operator() (cv::Point pt1, cv::Point pt2) { return (pt1.y < pt2.y);}
-    } orderY;
-    struct sortX {
-        bool operator() (cv::Point pt1, cv::Point pt2) { return (pt1.x < pt2.x);}
-    } orderX;
-
-    for (int i = 0; i < quads.size(); i++) {
-        std::vector<cv::Point>* quad = &quads[i];
-        std::sort(quad->begin(), quad->end(), orderY);
-        std::sort(quad->begin(), quad->begin() + 2, orderX);
-        std::sort(quad->begin() + 2, quad->end(), orderX);
-        float quadWidth = std::max((*quad)[3].x - (*quad)[0].x, (*quad)[1].x - (*quad)[2].x);
-        float quadHeight = std::max((*quad)[3].y - (*quad)[0].y, (*quad)[1].y - (*quad)[2].y);
-        if (quadWidth < width / 5 || quadHeight < height / 5) {
-            continue;
-        }
-        if (quadWidth > width * 0.99 || quadHeight > height * 0.99) {
-            continue;
-        }
-        if (quadWidth * quadHeight >= biggestWidth * biggestHeight) {
-            biggest = quad;
-            biggestWidth = quadWidth;
-            biggestHeight = quadHeight;
-        }
-    }
-    if (biggest == NULL) {
+    if (biggestArea == 0) {
         return EMPTY;
     }
     return create_quad(
-        (double) (*biggest)[0].x / width, (double) (*biggest)[0].y / height,
-        (double) (*biggest)[1].x / width, (double) (*biggest)[1].y / height,
-        (double) (*biggest)[2].x / width, (double) (*biggest)[2].y / height,
-        (double) (*biggest)[3].x / width, (double) (*biggest)[3].y / height
+        (double) biggest[0].x / width, (double) biggest[0].y / height,
+        (double) biggest[1].x / width, (double) biggest[1].y / height,
+        (double) biggest[2].x / width, (double) biggest[2].y / height,
+        (double) biggest[3].x / width, (double) biggest[3].y / height
     );
 }
