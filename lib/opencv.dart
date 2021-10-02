@@ -8,7 +8,7 @@ final DynamicLibrary nativeLib = Platform.isAndroid
     ? DynamicLibrary.open("libnative_add.so")
     : DynamicLibrary.process();
 
-class Quad extends Struct {
+class Detection extends Struct {
   @Double()
   external double x1;
 
@@ -34,11 +34,11 @@ class Quad extends Struct {
   external double y4;
 }
 
-final Pointer<Quad> Function(Pointer<Uint8> buf, int width, int height) detectQuadNative = nativeLib
-    .lookup<NativeFunction<Pointer<Quad> Function(Pointer<Uint8>, Uint32, Uint32)>>("detect_quad")
+final Pointer<Detection> Function(Pointer<Uint8> buf, int width, int height) detectQuadNative = nativeLib
+    .lookup<NativeFunction<Pointer<Detection> Function(Pointer<Uint8>, Uint32, Uint32)>>("detect_quad")
     .asFunction();
 
-Quad detectQuad(CameraImage image) {
+Detection detectQuad(CameraImage image) {
   final size = image.planes[0].bytes.length;
   Pointer<Uint8> p = malloc.allocate(size);
   p.asTypedList(size).setRange(0, size, image.planes[0].bytes);

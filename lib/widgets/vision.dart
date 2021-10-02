@@ -1,9 +1,28 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
 import 'package:malo/opencv.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
+
+class Quad {
+  Point topLeft;
+  Point topRight;
+  Point bottomLeft;
+  Point bottomRight;
+  Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
+
+  static Quad from(Detection d) {
+    Point p1 = Point(d.x1, d.y1);
+    Point p2 = Point(d.x2, d.y2);
+    Point p3 = Point(d.x3, d.y3);
+    Point p4 = Point(d.x4, d.y4);
+    return Quad(p1, p2, p3, p4);
+  }
+}
 
 class QuadPainter extends CustomPainter {
 
@@ -15,14 +34,14 @@ class QuadPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset(0, 0) & size, Paint()..color = Color.fromARGB(200, 0, 0, 0));
     if (this.quad != null) {
       final path = Path()
-        ..moveTo(this.quad!.x1 * size.width, this.quad!.y1 * size.height)
-        ..lineTo(this.quad!.x2 * size.width, this.quad!.y2 * size.height)
-        ..lineTo(this.quad!.x3 * size.width, this.quad!.y3 * size.height)
-        ..lineTo(this.quad!.x4 * size.width, this.quad!.y4 * size.height)
+        ..moveTo(this.quad!.topLeft.x * size.width, this.quad!.topLeft.y * size.height)
+        ..lineTo(this.quad!.topRight.x * size.width, this.quad!.topRight.y * size.height)
+        ..lineTo(this.quad!.bottomRight.x * size.width, this.quad!.bottomRight.y * size.height)
+        ..lineTo(this.quad!.bottomLeft.x * size.width, this.quad!.bottomLeft.y * size.height)
         ..close();
-      canvas.drawRect(Offset(0, 0) & size, Paint()..color = Color.fromARGB(200, 0, 0, 0));
       canvas.drawPath(path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
     }
   }
@@ -42,8 +61,11 @@ class Vision extends StatefulWidget {
 class VisionState extends State<Vision> {
   late CameraDescription _camera;
   late CameraController _controller;
+
   bool _isReady = false;
   bool _isDetecting = false;
+
+  List<Quad> detections = [];
   Quad? quad;
 
   @override
@@ -65,14 +87,20 @@ class VisionState extends State<Vision> {
           imageFormatGroup: ImageFormatGroup.bgra8888,
       );
       await _controller.initialize();
-      await _controller.lockCaptureOrientation();
+      await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
       _controller.startImageStream((CameraImage image) async {
         if (_isDetecting) return;
         _isDetecting = true;
         try {
-          final result = detectQuad(image);
+          final detection = detectQuad(image);
+          detections.insert(0, Quad.from(detection));
+          // Keeping some detections to reduce flickering
+          if (detections.length > 5) {
+            detections.length = 5;
+          }
+          List<Quad> quads = detections.where((e) => (e.topLeft.x + e.topRight.x + e.bottomLeft.x + e.bottomRight.x > 0)).toList();
           setState(() {
-            quad = result;
+            quad = quads.length > 0 ? quads.first : null;
           });
         } finally {
           _isDetecting = false;

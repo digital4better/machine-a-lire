@@ -4,7 +4,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-struct Quad {
+struct Detection {
     double x1;
     double y1;
     double x2;
@@ -16,23 +16,23 @@ struct Quad {
 };
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
-struct Quad *create_quad(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {
-    struct Quad *quad = (struct Quad *)malloc(sizeof(struct Quad));
-    quad->x1 = x1;
-    quad->y1 = y1;
-    quad->x2 = x2;
-    quad->y2 = y2;
-    quad->x3 = x3;
-    quad->y3 = y3;
-    quad->x4 = x4;
-    quad->y4 = y4;
-    return quad;
+struct Detection *create_detection(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {
+    struct Detection *detection = (struct Detection *)malloc(sizeof(struct Detection));
+    detection->x1 = x1;
+    detection->y1 = y1;
+    detection->x2 = x2;
+    detection->y2 = y2;
+    detection->x3 = x3;
+    detection->y3 = y3;
+    detection->x4 = x4;
+    detection->y4 = y4;
+    return detection;
 }
 
-Quad* EMPTY = create_quad(0, 0, 0, 0, 0, 0, 0, 0);
+Detection* EMPTY = create_detection(0, 0, 0, 0, 0, 0, 0, 0);
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
-struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
+struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     cv::Mat bgra(height, width, CV_8UC4, buf);
     cv::Mat img;
     cv::cvtColor(bgra, img, cv::COLOR_BGRA2GRAY);
@@ -58,8 +58,9 @@ struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     float biggestArea = 0;
     for (const auto & contour : contours) {
         cv::approxPolyDP(cv::Mat(contour), approx, cv::arcLength(cv::Mat(contour), true) * 0.02, true);
-        float area = std::fabs(cv::contourArea(cv::Mat(approx)));
-        if (approx.size() == 4 && area > 10000 && cv::isContourConvex(cv::Mat(approx))) {
+        float area = std::fabs(cv::contourArea(cv::Mat(approx))) / (width * height);
+        // Quad must have 4 edges, is convex and cover 10-80% of the screen
+        if (approx.size() == 4 && area > 0.1 && area < 0.8 && cv::isContourConvex(cv::Mat(approx))) {
             double maxCosine = 0;
             for (int j = 2; j < 5; j++) {
                 cv::Point pt1 = approx[j % 4];
@@ -81,7 +82,7 @@ struct Quad *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     if (biggestArea == 0) {
         return EMPTY;
     }
-    return create_quad(
+    return create_detection(
         (double) biggest[0].x / width, (double) biggest[0].y / height,
         (double) biggest[1].x / width, (double) biggest[1].y / height,
         (double) biggest[2].x / width, (double) biggest[2].y / height,
