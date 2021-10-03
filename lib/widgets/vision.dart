@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -125,7 +126,7 @@ class VisionState extends State<Vision> {
     }
   }
 
-  Future<String> _takePicture() async {
+  Future<CameraImage> _takePicture() async {
     setState(() {
       _isReady = false;
     });
@@ -139,8 +140,19 @@ class VisionState extends State<Vision> {
     );
     await _controller.initialize();
     await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-    XFile file = await _controller.takePicture();
-    return file.path;
+    Completer<CameraImage> c = new Completer();
+    bool captured = false;
+    await _controller.startImageStream((CameraImage image) async {
+      if (!captured) {
+        captured = true;
+        print("image captured");
+        await _controller.stopImageStream();
+        await _controller.dispose();
+        // TODO warp image with opencv
+        c.complete(image);
+      }
+    });
+    return c.future;
   }
 
   set mode(VisionMode mode) {
@@ -182,8 +194,8 @@ class VisionState extends State<Vision> {
                       ? CameraPreview(_controller)
                       : Container(color: Color(0xff000000)),
                   onTap: () async {
-                    String path = await _takePicture();
-                    print(path);
+                    CameraImage image = await _takePicture();
+                    print("${image.width}x${image.height}");
                     await Navigator.push(context, MaterialPageRoute(builder: (context) => Narrator()));
                     await _initCamera();
                   },
