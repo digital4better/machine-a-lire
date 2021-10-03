@@ -13,6 +13,7 @@ class Quad {
   Point topRight;
   Point bottomLeft;
   Point bottomRight;
+
   Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
 
   static Quad from(Detection d) {
@@ -25,24 +26,28 @@ class Quad {
 }
 
 class QuadPainter extends CustomPainter {
-
-  QuadPainter({
-    this.quad
-  });
+  QuadPainter({this.quad, required this.transparent});
 
   Quad? quad;
+  bool transparent;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset(0, 0) & size, Paint()..color = Color.fromARGB(200, 0, 0, 0));
+    canvas.drawRect(Offset(0, 0) & size,
+        Paint()..color = Color.fromARGB(transparent ? 200 : 255, 0, 0, 0));
     if (this.quad != null) {
       final path = Path()
-        ..moveTo(this.quad!.topLeft.x * size.width, this.quad!.topLeft.y * size.height)
-        ..lineTo(this.quad!.topRight.x * size.width, this.quad!.topRight.y * size.height)
-        ..lineTo(this.quad!.bottomRight.x * size.width, this.quad!.bottomRight.y * size.height)
-        ..lineTo(this.quad!.bottomLeft.x * size.width, this.quad!.bottomLeft.y * size.height)
+        ..moveTo(this.quad!.topLeft.x * size.width,
+            this.quad!.topLeft.y * size.height)
+        ..lineTo(this.quad!.topRight.x * size.width,
+            this.quad!.topRight.y * size.height)
+        ..lineTo(this.quad!.bottomRight.x * size.width,
+            this.quad!.bottomRight.y * size.height)
+        ..lineTo(this.quad!.bottomLeft.x * size.width,
+            this.quad!.bottomLeft.y * size.height)
         ..close();
-      canvas.drawPath(path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
+      canvas.drawPath(
+          path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
     }
   }
 
@@ -53,14 +58,16 @@ class QuadPainter extends CustomPainter {
 }
 
 class Vision extends StatefulWidget {
-
   @override
   VisionState createState() => VisionState();
 }
 
+enum VisionMode { CameraWithPreview, CameraWithoutPreview }
+
 class VisionState extends State<Vision> {
   late CameraDescription _camera;
   late CameraController _controller;
+  late VisionMode _mode;
 
   bool _isReady = false;
   bool _isDetecting = false;
@@ -72,7 +79,7 @@ class VisionState extends State<Vision> {
   void initState() {
     super.initState();
     _initCamera();
-    Speech().speak("Mode lecture");
+    mode = VisionMode.CameraWithoutPreview;
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
   }
 
@@ -81,10 +88,10 @@ class VisionState extends State<Vision> {
     if (cameras.length > 0) {
       _camera = cameras.first;
       _controller = CameraController(
-          _camera,
-          ResolutionPreset.medium,
-          enableAudio: false,
-          imageFormatGroup: ImageFormatGroup.bgra8888,
+        _camera,
+        ResolutionPreset.low,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.bgra8888,
       );
       await _controller.initialize();
       await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
@@ -98,7 +105,13 @@ class VisionState extends State<Vision> {
           if (detections.length > 5) {
             detections.length = 5;
           }
-          List<Quad> quads = detections.where((e) => (e.topLeft.x + e.topRight.x + e.bottomLeft.x + e.bottomRight.x > 0)).toList();
+          List<Quad> quads = detections
+              .where((e) => (e.topLeft.x +
+                      e.topRight.x +
+                      e.bottomLeft.x +
+                      e.bottomRight.x >
+                  0))
+              .toList();
           setState(() {
             quad = quads.length > 0 ? quads.first : null;
           });
@@ -109,6 +122,39 @@ class VisionState extends State<Vision> {
       setState(() {
         _isReady = true;
       });
+    }
+  }
+
+  Future<String> _takePicture() async {
+    setState(() {
+      _isReady = false;
+    });
+    await _controller.stopImageStream();
+    await _controller.dispose();
+    _controller = CameraController(
+      _camera,
+      ResolutionPreset.max,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.bgra8888,
+    );
+    await _controller.initialize();
+    await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
+    XFile file = await _controller.takePicture();
+    return file.path;
+  }
+
+  set mode(VisionMode mode) {
+    _mode = mode;
+    Speech().stop();
+    switch (_mode) {
+      case VisionMode.CameraWithoutPreview:
+        Speech().speak("Mode lecture");
+        break;
+      case VisionMode.CameraWithPreview:
+        Speech().speak("Mode lecture avec prévisualisation");
+        break;
+      default:
+        break;
     }
   }
 
@@ -125,21 +171,41 @@ class VisionState extends State<Vision> {
     final ratio = _isReady ? _controller.value.aspectRatio * deviceRatio : 1.0;
     final scale = 1 / ratio;
     return Center(
-        child:Transform.scale(
+        child: Transform.scale(
             scale: scale,
             child: CustomPaint(
-              foregroundPainter: QuadPainter(quad: quad),
-              child: GestureDetector(
-                child: _isReady && _controller.value.isInitialized ? CameraPreview(_controller) : Container(),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Narrator())
-                  );
-                }
-              )
-            )
-        )
-    );
+                foregroundPainter: QuadPainter(
+                    quad: quad,
+                    transparent: _mode == VisionMode.CameraWithPreview),
+                child: GestureDetector(
+                  child: _isReady && _controller.value.isInitialized
+                      ? CameraPreview(_controller)
+                      : Container(color: Color(0xff000000)),
+                  onTap: () async {
+                    String path = await _takePicture();
+                    print(path);
+                    await Navigator.push(context, MaterialPageRoute(builder: (context) => Narrator()));
+                    await _initCamera();
+                  },
+                  onPanEnd: (details) {
+                    if (details.velocity.pixelsPerSecond.dx.abs() >
+                        details.velocity.pixelsPerSecond.dy.abs()) {
+                      if (details.velocity.pixelsPerSecond.dx > 0) {
+                        setState(() {
+                          mode = _mode == VisionMode.CameraWithPreview
+                              ? VisionMode.CameraWithoutPreview
+                              : VisionMode.CameraWithPreview;
+                        });
+                      }
+                      if (details.velocity.pixelsPerSecond.dx < 0) {
+                        setState(() {
+                          mode = _mode == VisionMode.CameraWithPreview
+                              ? VisionMode.CameraWithoutPreview
+                              : VisionMode.CameraWithPreview;
+                        });
+                      }
+                    }
+                  },
+                ))));
   }
 }

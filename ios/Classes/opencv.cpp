@@ -32,27 +32,46 @@ struct Detection *create_detection(double x1, double y1, double x2, double y2, d
 Detection* EMPTY = create_detection(0, 0, 0, 0, 0, 0, 0, 0);
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
-struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
-    cv::Mat bgra(height, width, CV_8UC4, buf);
-    cv::Mat img;
-    cv::cvtColor(bgra, img, cv::COLOR_BGRA2GRAY);
+void detect_contours(cv::Mat* in, std::vector<std::vector<cv::Point>>* contours) {
+    // Blurring to enhance edge detection
+    cv::medianBlur(*in, *in, 3);
+    cv::Mat out(in->size(), CV_8U);
 
-    if (img.size().width == 0 || img.size().height == 0) {
+    double high = cv::threshold(*in, out, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    double low = 0.5 * high;
+
+	cv::Canny(*in, out, low, high);
+    cv::dilate(out, out, cv::Mat(), cv::Point(-1, -1));
+    cv::findContours(out, *contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+}
+
+extern "C" __attribute__((visibility("default"))) __attribute__((used))
+struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
+    cv::Mat original(height, width, CV_8UC4, buf);
+
+    double factor = 320.0 / width;
+    width *= factor;
+    height *= factor;
+    cv::Mat resized;
+    cv::resize(original, resized, cv::Size(), factor, factor);
+
+    if (width == 0 || height == 0) {
         return EMPTY;
     }
 
-    // Blurring to enhance edge detection
-    cv::medianBlur(img, img, 3);
-    cv::Mat gray(img.size(), CV_8U);
+    cv::Mat gray, hsv;
+    cv::Mat channels[3];
+    cv::cvtColor(resized, resized, cv::COLOR_BGRA2BGR);
+    cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(resized, hsv, cv::COLOR_BGR2HSV);
+    cv::split(hsv, channels);
 
-    // Detect quads
-    std::vector<std::vector<cv::Point> > contours;
-    double high = cv::threshold(img, gray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-    double low = 0.5 * high;
+    // Detect contours
+    std::vector<std::vector<cv::Point>> contours;
 
-	cv::Canny(img, gray, low, high);
-    cv::dilate(gray, gray, cv::Mat(), cv::Point(-1, -1));
-    cv::findContours(gray, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+    //detect_contours(&channels[1], &contours); // Saturation channel
+    detect_contours(&gray, &contours);
+
     std::vector<cv::Point> approx;
     std::vector<cv::Point> biggest;
     float biggestArea = 0;
@@ -73,7 +92,7 @@ struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
                 double cosine = std::fabs((dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10));
                 maxCosine = MAX(maxCosine, cosine);
             }
-            if (maxCosine < 0.3 && biggestArea < area) {
+            if (maxCosine < 0.5 && biggestArea < area) {
                 biggest = approx;
                 biggestArea = area;
             }
