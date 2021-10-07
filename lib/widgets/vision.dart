@@ -80,7 +80,7 @@ class VisionState extends State<Vision> {
   void initState() {
     super.initState();
     _initCamera();
-    mode = VisionMode.CameraWithoutPreview;
+    mode = VisionMode.CameraWithPreview;
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
   }
 
@@ -96,29 +96,31 @@ class VisionState extends State<Vision> {
       );
       await _controller.initialize();
       await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      _controller.startImageStream((CameraImage image) async {
+      _controller.startImageStream((CameraImage image) {
         if (_isDetecting) return;
         _isDetecting = true;
-        try {
-          final detection = detectQuad(image);
-          detections.insert(0, Quad.from(detection));
-          // Keeping some detections to reduce flickering
-          if (detections.length > 5) {
-            detections.length = 5;
+        Future.delayed(Duration(milliseconds: 10), () {
+          try {
+            final detection = detectQuad(image);
+            detections.insert(0, Quad.from(detection));
+            // Keeping some detections to reduce flickering
+            if (detections.length > 5) {
+              detections.length = 5;
+            }
+            List<Quad> quads = detections
+                .where((e) => (e.topLeft.x +
+                e.topRight.x +
+                e.bottomLeft.x +
+                e.bottomRight.x >
+                0))
+                .toList();
+            setState(() {
+              quad = quads.length > 0 ? quads.first : null;
+            });
+          } finally {
+            _isDetecting = false;
           }
-          List<Quad> quads = detections
-              .where((e) => (e.topLeft.x +
-                      e.topRight.x +
-                      e.bottomLeft.x +
-                      e.bottomRight.x >
-                  0))
-              .toList();
-          setState(() {
-            quad = quads.length > 0 ? quads.first : null;
-          });
-        } finally {
-          _isDetecting = false;
-        }
+        });
       });
       setState(() {
         _isReady = true;
@@ -149,6 +151,7 @@ class VisionState extends State<Vision> {
         await _controller.stopImageStream();
         await _controller.dispose();
         // TODO warp image with opencv
+        // https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#image-processing
         c.complete(image);
       }
     });
@@ -194,12 +197,17 @@ class VisionState extends State<Vision> {
                       ? CameraPreview(_controller)
                       : Container(color: Color(0xff000000)),
                   onTap: () async {
-                    CameraImage image = await _takePicture();
-                    print("${image.width}x${image.height}");
-                    await Navigator.push(context, MaterialPageRoute(builder: (context) => Narrator()));
-                    await _initCamera();
+                    if (quad != null) {
+                      CameraImage image = await _takePicture();
+                      print("${image.width}x${image.height}");
+                      await Navigator.push(context, MaterialPageRoute(builder: (context) => Narrator()));
+                      await _initCamera();
+                    } else {
+                      Speech().speak("Le document n'est plus devant l'appareil");
+                    }
                   },
                   onPanEnd: (details) {
+                    print(details);
                     if (details.velocity.pixelsPerSecond.dx.abs() >
                         details.velocity.pixelsPerSecond.dy.abs()) {
                       if (details.velocity.pixelsPerSecond.dx > 0) {
