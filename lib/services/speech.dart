@@ -14,7 +14,7 @@ class Speech {
     _tts.setSpeechRate(0.4);
   }
 
-  void speak(String text) async =>_tts.speak(text);
-  void pause() async =>_tts.pause();
-  void stop() async =>_tts.stop();
+  void speak(String text) async => _tts.speak(text);
+  void pause() async => _tts.pause();
+  void stop() async => _tts.stop();
 }

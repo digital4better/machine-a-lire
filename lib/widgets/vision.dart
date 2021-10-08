@@ -109,10 +109,10 @@ class VisionState extends State<Vision> {
             }
             List<Quad> quads = detections
                 .where((e) => (e.topLeft.x +
-                e.topRight.x +
-                e.bottomLeft.x +
-                e.bottomRight.x >
-                0))
+                        e.topRight.x +
+                        e.bottomLeft.x +
+                        e.bottomRight.x >
+                    0))
                 .toList();
             setState(() {
               quad = quads.length > 0 ? quads.first : null;
@@ -200,10 +200,12 @@ class VisionState extends State<Vision> {
                     if (quad != null) {
                       CameraImage image = await _takePicture();
                       print("${image.width}x${image.height}");
-                      await Navigator.push(context, MaterialPageRoute(builder: (context) => Narrator()));
+                      await Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => Narrator()));
                       await _initCamera();
                     } else {
-                      Speech().speak("Le document n'est plus devant l'appareil");
+                      Speech()
+                          .speak("Le document n'est plus devant l'appareil");
                     }
                   },
                   onPanEnd: (details) {

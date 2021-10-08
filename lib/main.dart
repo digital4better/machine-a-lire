@@ -16,7 +16,5 @@ class MyApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-      home: Vision()
-  );
+  Widget build(BuildContext context) => MaterialApp(home: Vision());
 }

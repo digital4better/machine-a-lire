@@ -34,9 +34,13 @@ class Detection extends Struct {
   external double y4;
 }
 
-final Pointer<Detection> Function(Pointer<Uint8> buf, int width, int height) detectQuadNative = nativeLib
-    .lookup<NativeFunction<Pointer<Detection> Function(Pointer<Uint8>, Uint32, Uint32)>>("detect_quad")
-    .asFunction();
+final Pointer<Detection> Function(Pointer<Uint8> buf, int width, int height)
+    detectQuadNative = nativeLib
+        .lookup<
+            NativeFunction<
+                Pointer<Detection> Function(
+                    Pointer<Uint8>, Uint32, Uint32)>>("detect_quad")
+        .asFunction();
 
 Detection detectQuad(CameraImage image) {
   final size = image.planes[0].bytes.length;
@@ -44,8 +48,7 @@ Detection detectQuad(CameraImage image) {
   p.asTypedList(size).setRange(0, size, image.planes[0].bytes);
   try {
     return detectQuadNative(p, image.width, image.height).ref;
-  }
-  finally {
+  } finally {
     malloc.free(p);
   }
 }
