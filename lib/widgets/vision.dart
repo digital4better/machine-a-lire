@@ -86,46 +86,51 @@ class VisionState extends State<Vision> {
 
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
-    if (cameras.length > 0) {
-      _camera = cameras.first;
-      _controller = CameraController(
-        _camera,
-        ResolutionPreset.low,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.bgra8888,
-      );
-      await _controller.initialize();
-      await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      _controller.startImageStream((CameraImage image) {
-        if (_isDetecting) return;
-        _isDetecting = true;
-        Future.delayed(Duration(milliseconds: 10), () {
-          try {
-            final detection = detectQuad(image);
-            detections.insert(0, Quad.from(detection));
-            // Keeping some detections to reduce flickering
-            if (detections.length > 5) {
-              detections.length = 5;
-            }
-            List<Quad> quads = detections
-                .where((e) => (e.topLeft.x +
-                        e.topRight.x +
-                        e.bottomLeft.x +
-                        e.bottomRight.x >
-                    0))
-                .toList();
-            setState(() {
-              quad = quads.length > 0 ? quads.first : null;
-            });
-          } finally {
-            _isDetecting = false;
+
+    // TODO: Speech error
+    if (cameras.length == 0) return;
+
+    // Get the back facing camera if available of the first one otherwise.
+    _camera = cameras.firstWhere(
+        (element) => element.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first);
+    _controller = CameraController(
+      _camera,
+      ResolutionPreset.low,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.bgra8888,
+    );
+    await _controller.initialize();
+    await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
+    _controller.startImageStream((CameraImage image) {
+      if (_isDetecting) return;
+      _isDetecting = true;
+      Future.delayed(Duration(milliseconds: 10), () {
+        try {
+          final detection = detectQuad(image);
+          detections.insert(0, Quad.from(detection));
+          // Keeping some detections to reduce flickering
+          if (detections.length > 5) {
+            detections.length = 5;
           }
-        });
+          List<Quad> quads = detections
+              .where((e) => (e.topLeft.x +
+                      e.topRight.x +
+                      e.bottomLeft.x +
+                      e.bottomRight.x >
+                  0))
+              .toList();
+          setState(() {
+            quad = quads.length > 0 ? quads.first : null;
+          });
+        } finally {
+          _isDetecting = false;
+        }
       });
-      setState(() {
-        _isReady = true;
-      });
-    }
+    });
+    setState(() {
+      _isReady = true;
+    });
   }
 
   Future<CameraImage> _takePicture() async {
