@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:camera/camera.dart';
-import 'package:malo/opencv.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
+import 'package:native_opencv/native_opencv.dart';
 
 class Quad {
   Point topLeft;

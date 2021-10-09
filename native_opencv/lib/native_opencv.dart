@@ -5,7 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:ffi/ffi.dart';
 
 final DynamicLibrary nativeLib = Platform.isAndroid
-    ? DynamicLibrary.open("libnative_add.so")
+    ? DynamicLibrary.open("libnative_opencv.so")
     : DynamicLibrary.process();
 
 class Detection extends Struct {
