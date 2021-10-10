@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:ffi/ffi.dart';
@@ -34,7 +35,8 @@ class Detection extends Struct {
   external double y4;
 }
 
-final Pointer<Detection> Function(Pointer<Uint8> buf, int width, int height)
+final Pointer<Detection> Function(
+        Pointer<Uint8> buf, int width, int height)
     detectQuadNative = nativeLib
         .lookup<
             NativeFunction<
@@ -43,12 +45,22 @@ final Pointer<Detection> Function(Pointer<Uint8> buf, int width, int height)
         .asFunction();
 
 Detection detectQuad(CameraImage image) {
-  final size = image.planes[0].bytes.length;
-  Pointer<Uint8> p = malloc.allocate(size);
-  p.asTypedList(size).setRange(0, size, image.planes[0].bytes);
+  final size = image.planes
+      .map((plane) => plane.bytes.length)
+      .reduce((acc, length) => acc + length);
+
+  Pointer<Uint8> ptr = malloc.allocate(size);
+  Uint8List bytes = ptr.asTypedList(size);
+
+  int index = 0;
+  for (var plane in image.planes) {
+    bytes.setRange(index, index + plane.bytes.length, plane.bytes);
+    index += plane.bytes.length;
+  }
+
   try {
-    return detectQuadNative(p, image.width, image.height).ref;
+    return detectQuadNative(ptr, image.width, image.height).ref;
   } finally {
-    malloc.free(p);
+    malloc.free(ptr);
   }
 }

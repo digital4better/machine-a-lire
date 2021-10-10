@@ -1,10 +1,9 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
@@ -27,29 +26,28 @@ class Quad {
 }
 
 class QuadPainter extends CustomPainter {
-  QuadPainter({this.quad, required this.transparent});
+  QuadPainter({this.quad});
 
   Quad? quad;
-  bool transparent;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset(0, 0) & size,
-        Paint()..color = Color.fromARGB(transparent ? 200 : 255, 0, 0, 0));
-    if (this.quad != null) {
-      final path = Path()
-        ..moveTo(this.quad!.topLeft.x * size.width,
-            this.quad!.topLeft.y * size.height)
-        ..lineTo(this.quad!.topRight.x * size.width,
-            this.quad!.topRight.y * size.height)
-        ..lineTo(this.quad!.bottomRight.x * size.width,
-            this.quad!.bottomRight.y * size.height)
-        ..lineTo(this.quad!.bottomLeft.x * size.width,
-            this.quad!.bottomLeft.y * size.height)
-        ..close();
-      canvas.drawPath(
-          path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
-    }
+    canvas.drawRect(
+        Offset(0, 0) & size, Paint()..color = Color.fromARGB(200, 0, 0, 0));
+
+    if (this.quad == null) return;
+
+    final path = Path()
+      ..moveTo(
+          this.quad!.topLeft.x * size.width, this.quad!.topLeft.y * size.height)
+      ..lineTo(this.quad!.topRight.x * size.width,
+          this.quad!.topRight.y * size.height)
+      ..lineTo(this.quad!.bottomRight.x * size.width,
+          this.quad!.bottomRight.y * size.height)
+      ..lineTo(this.quad!.bottomLeft.x * size.width,
+          this.quad!.bottomLeft.y * size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
   }
 
   @override
@@ -59,6 +57,13 @@ class QuadPainter extends CustomPainter {
 }
 
 class Vision extends StatefulWidget {
+  const Vision({
+    Key? key,
+    required this.camera,
+  }) : super(key: key);
+
+  final CameraDescription camera;
+
   @override
   VisionState createState() => VisionState();
 }
@@ -66,106 +71,47 @@ class Vision extends StatefulWidget {
 enum VisionMode { CameraWithPreview, CameraWithoutPreview }
 
 class VisionState extends State<Vision> {
-  late CameraDescription _camera;
+  VisionMode _mode = VisionMode.CameraWithPreview;
+
   late CameraController _controller;
-  late VisionMode _mode;
+  late Future<void>? _initializeControllerFuture;
 
-  bool _isReady = false;
-  bool _isDetecting = false;
-
-  List<Quad> detections = [];
+  Completer<Null>? detection;
+  Queue<Quad?> detections = new Queue();
   Quad? quad;
 
-  @override
-  void initState() {
-    super.initState();
-    _initCamera();
-    mode = VisionMode.CameraWithPreview;
-    //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
-  }
-
-  Future<void> _initCamera() async {
-    final cameras = await availableCameras();
-
-    // TODO: Speech error
-    if (cameras.length == 0) return;
-
-    // Get the back facing camera if available of the first one otherwise.
-    _camera = cameras.firstWhere(
-        (element) => element.lensDirection == CameraLensDirection.back,
-        orElse: () => cameras.first);
-    _controller = CameraController(
-      _camera,
-      ResolutionPreset.low,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.bgra8888,
-    );
-    await _controller.initialize();
-    await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-    _controller.startImageStream((CameraImage image) {
-      if (_isDetecting) return;
-      _isDetecting = true;
-      Future.delayed(Duration(milliseconds: 10), () {
-        try {
-          final detection = detectQuad(image);
-          detections.insert(0, Quad.from(detection));
-          // Keeping some detections to reduce flickering
-          if (detections.length > 5) {
-            detections.length = 5;
-          }
-          List<Quad> quads = detections
-              .where((e) => (e.topLeft.x +
-                      e.topRight.x +
-                      e.bottomLeft.x +
-                      e.bottomRight.x >
-                  0))
-              .toList();
-          setState(() {
-            quad = quads.length > 0 ? quads.first : null;
-          });
-        } finally {
-          _isDetecting = false;
-        }
-      });
-    });
-    setState(() {
-      _isReady = true;
-    });
-  }
-
   Future<CameraImage> _takePicture() async {
-    setState(() {
-      _isReady = false;
-    });
-    await _controller.stopImageStream();
-    await _controller.dispose();
-    _controller = CameraController(
-      _camera,
+    await _disposeController();
+
+    Completer<CameraImage> completer = new Completer();
+    CameraController controller = CameraController(
+      widget.camera,
       ResolutionPreset.max,
       enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.bgra8888,
+      imageFormatGroup: ImageFormatGroup.yuv420,
     );
-    await _controller.initialize();
-    await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-    Completer<CameraImage> c = new Completer();
-    bool captured = false;
-    await _controller.startImageStream((CameraImage image) async {
-      if (!captured) {
-        captured = true;
-        print("image captured");
-        await _controller.stopImageStream();
-        await _controller.dispose();
-        // TODO warp image with opencv
-        // https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#image-processing
-        c.complete(image);
-      }
+    await controller.initialize().then((_) async {
+      await controller.lockCaptureOrientation();
+      await controller.startImageStream((CameraImage image) async {
+        completer.complete(image);
+        await controller.stopImageStream();
+      });
+      await controller.unlockCaptureOrientation();
+      await controller.dispose();
     });
-    return c.future;
+
+    _initController();
+
+    return completer.future;
   }
 
-  set mode(VisionMode mode) {
-    _mode = mode;
-    Speech().stop();
+  void _toggleVisionMode() {
+    setState(() {
+      _mode = _mode == VisionMode.CameraWithPreview
+          ? VisionMode.CameraWithoutPreview
+          : VisionMode.CameraWithPreview;
+    });
+
     switch (_mode) {
       case VisionMode.CameraWithoutPreview:
         Speech().speak("Mode lecture");
@@ -178,61 +124,106 @@ class VisionState extends State<Vision> {
     }
   }
 
+  Future<void> _initController() async {
+    _controller = CameraController(
+      widget.camera,
+      ResolutionPreset.low,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.yuv420,
+    );
+
+    setState(() {
+      _initializeControllerFuture = _controller.initialize().then((_) async {
+        await _controller.lockCaptureOrientation();
+        _controller.startImageStream((CameraImage image) {
+          if (detection != null && !detection!.isCompleted) return;
+          detection = new Completer();
+          Future.delayed(Duration(milliseconds: 10), () {
+            try {
+              final detectedQuad = detectQuad(image);
+
+              detections.addFirst(Quad.from(detectedQuad));
+              // Keeping some detections to reduce flickering
+              if (detections.length > 5) {
+                detections.removeLast();
+              }
+
+              quad = detections.firstWhere(
+                  (e) => (e!.topLeft.x +
+                          e.topRight.x +
+                          e.bottomLeft.x +
+                          e.bottomRight.x >
+                      0),
+                  orElse: () => null);
+            } finally {
+              detection!.complete(null);
+              setState(() {});
+            }
+          });
+        });
+      });
+    });
+  }
+
+  Future<void> _disposeController() async {
+    setState(() {
+      _initializeControllerFuture = null;
+    });
+
+    await _controller.unlockCaptureOrientation();
+    await _controller.dispose();
+  }
+
   @override
-  void dispose() {
-    _controller.dispose();
+  void initState() {
+    super.initState();
+    _initController();
+    //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
+  }
+
+  @override
+  void dispose() async {
+    await _disposeController();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final deviceRatio = size.width / size.height;
-    final ratio = _isReady ? _controller.value.aspectRatio * deviceRatio : 1.0;
-    final scale = 1 / ratio;
-    return Center(
-        child: Transform.scale(
-            scale: scale,
-            child: CustomPaint(
-                foregroundPainter: QuadPainter(
-                    quad: quad,
-                    transparent: _mode == VisionMode.CameraWithPreview),
-                child: GestureDetector(
-                  child: _isReady && _controller.value.isInitialized
-                      ? CameraPreview(_controller)
-                      : Container(color: Color(0xff000000)),
-                  onTap: () async {
-                    if (quad != null) {
-                      CameraImage image = await _takePicture();
-                      print("${image.width}x${image.height}");
-                      await Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => Narrator()));
-                      await _initCamera();
-                    } else {
-                      Speech()
-                          .speak("Le document n'est plus devant l'appareil");
-                    }
-                  },
-                  onPanEnd: (details) {
-                    print(details);
-                    if (details.velocity.pixelsPerSecond.dx.abs() >
-                        details.velocity.pixelsPerSecond.dy.abs()) {
-                      if (details.velocity.pixelsPerSecond.dx > 0) {
-                        setState(() {
-                          mode = _mode == VisionMode.CameraWithPreview
-                              ? VisionMode.CameraWithoutPreview
-                              : VisionMode.CameraWithPreview;
-                        });
-                      }
-                      if (details.velocity.pixelsPerSecond.dx < 0) {
-                        setState(() {
-                          mode = _mode == VisionMode.CameraWithPreview
-                              ? VisionMode.CameraWithoutPreview
-                              : VisionMode.CameraWithPreview;
-                        });
-                      }
-                    }
-                  },
-                ))));
-  }
+  Widget build(BuildContext context) => FutureBuilder<void>(
+        future: _initializeControllerFuture,
+        builder: (context, snapshot) {
+          // If the Future is complete, display the preview.
+          if (snapshot.connectionState == ConnectionState.done) {
+            final size = MediaQuery.of(context).size;
+            final deviceRatio = size.width / size.height;
+
+            return Transform.scale(
+                scale: 1 / (_controller.value.aspectRatio * deviceRatio),
+                child: CustomPaint(
+                    foregroundPainter: QuadPainter(quad: quad),
+                    child: GestureDetector(
+                        child: _mode == VisionMode.CameraWithPreview
+                            ? CameraPreview(_controller)
+                            : Container(color: Color(0xff000000)),
+                        onTap: () async {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      Narrator(image: _takePicture())));
+                        },
+                        onPanEnd: (details) {
+                          if (!(details.velocity.pixelsPerSecond.dx.abs() >
+                                  details.velocity.pixelsPerSecond.dy.abs() &&
+                              details.velocity.pixelsPerSecond.dx != 0)) {
+                            return;
+                          }
+                          _toggleVisionMode();
+                        })));
+          }
+          // Otherwise, display a loading indicator.
+          else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      );
 }

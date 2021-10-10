@@ -164,21 +164,22 @@ struct Detection *detect_quad_by_lines(cv::Mat &image, int width, int height) {
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
 struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
-    cv::Mat original(height, width, CV_8UC4, buf);
+    cv::Mat original(height + height/2, width, CV_8UC1, buf);
 
     double factor = 320.0 / width;
     width *= factor;
     height *= factor;
-    cv::Mat resized;
-    cv::resize(original, resized, cv::Size(), factor, factor);
 
     if (width == 0 || height == 0) {
         return &EMPTY;
     }
 
+    cv::Mat resized;
+    cv::resize(original, resized, cv::Size(), factor, factor);
+
     cv::Mat gray, hsv;
     cv::Mat channels[3];
-    cv::cvtColor(resized, resized, cv::COLOR_BGRA2BGR);
+    cv::cvtColor(resized, resized, cv::COLOR_YUV2BGR_I420);
 
     cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
     prepare(gray);

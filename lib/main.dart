@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -22,5 +23,12 @@ void main() async {
 
   Speech().speak("Bonjour !");
 
-  runApp(MaterialApp(home: Vision()));
+  // Select back facing camera if available of the first one otherwise.
+  final cameras = await availableCameras();
+  if (cameras.length == 0) return;
+  final camera = cameras.firstWhere(
+      (element) => element.lensDirection == CameraLensDirection.back,
+      orElse: () => cameras.first);
+
+  runApp(MaterialApp(home: Vision(camera: camera)));
 }
