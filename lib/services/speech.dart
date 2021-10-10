@@ -15,7 +15,11 @@ class Speech {
     _tts.awaitSpeakCompletion(true);
   }
 
-  Future speak(String text) async => _tts.speak(text);
+  Future speak(String text) async {
+    await _tts.stop();
+    return _tts.speak(text);
+  }
+
   void pause() async => _tts.pause();
   void stop() async => _tts.stop();
 }
