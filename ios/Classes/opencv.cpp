@@ -199,7 +199,7 @@ void warp_image(uint8_t *buf, int32_t width, int32_t height, double tl_x, double
 
     cv::Mat warped, gray;
     cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
-    
+
     int maxWidth = width * MAX(sqrt((br_x - bl_x) * (br_x - bl_x) + (br_y - bl_y) * (br_y - bl_y)),
                        sqrt((tr_x - tl_x) * (tr_x - tl_x) + (tr_y - tl_y) * (tr_y - tl_y)));
 

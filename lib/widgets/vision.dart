@@ -213,9 +213,8 @@ class VisionState extends State<Vision> {
                       });
                       await _controller.stopImageStream();
                       await _controller.dispose();
-                      final String path = (await getTemporaryDirectory()).path + "/capture${DateTime.now().millisecondsSinceEpoch}.jpeg";
+                      final String path = (await getTemporaryDirectory()).path + "/capture${DateTime.now().millisecondsSinceEpoch}.png";
                       warpImage(cameraImageToBGRBytes(last!), quad!, path);
-                      //TODO OCR : https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#image-processing
                       await Navigator.push(
                           context,
                           MaterialPageRoute(
