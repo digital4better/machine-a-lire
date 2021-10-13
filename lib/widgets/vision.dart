@@ -1,13 +1,15 @@
 import 'dart:async';
+import 'dart:collection';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
 import 'package:malo/opencv.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Quad {
   Point topLeft;
@@ -17,26 +19,36 @@ class Quad {
 
   Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
 
-  static Quad from(Detection d) {
-    Point p1 = Point(d.x1, d.y1);
-    Point p2 = Point(d.x2, d.y2);
-    Point p3 = Point(d.x3, d.y3);
-    Point p4 = Point(d.x4, d.y4);
-    return Quad(p1, p2, p3, p4);
+  static Quad empty = Quad(Point(0, 0), Point(0, 0), Point(0, 0), Point(0, 0));
+
+  static Quad from(Detection? d) {
+    if (d == null) {
+      return Quad.empty;
+    }
+    List<Point> points = [Point(d.x1, d.y1), Point(d.x2, d.y2), Point(d.x3, d.y3), Point(d.x4, d.y4)];
+    points.sort((a, b) => a.x.compareTo(b.x));
+    List<Point> lefts = points.sublist(0, 2);
+    List<Point> rights = points.sublist(2, 4);
+    lefts.sort((a, b) => a.y.compareTo(b.y));
+    rights.sort((a, b) => a.y.compareTo(b.y));
+    return Quad(lefts[0], rights[0], rights[1], lefts[1]);
   }
+
+  bool get isEmpty => topLeft.x + topLeft.y + topRight.x + topRight.y + bottomLeft.x + bottomLeft.y + bottomRight.x + bottomRight.y == 0;
 }
 
 class QuadPainter extends CustomPainter {
-  QuadPainter({this.quad, required this.transparent});
+  QuadPainter({this.quad, required this.transparent, required this.draw});
 
   Quad? quad;
   bool transparent;
+  bool draw;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset(0, 0) & size,
         Paint()..color = Color.fromARGB(transparent ? 200 : 255, 0, 0, 0));
-    if (this.quad != null) {
+    if (this.quad != null && this.draw) {
       final path = Path()
         ..moveTo(this.quad!.topLeft.x * size.width,
             this.quad!.topLeft.y * size.height)
@@ -65,6 +77,26 @@ class Vision extends StatefulWidget {
 
 enum VisionMode { CameraWithPreview, CameraWithoutPreview }
 
+void _detectQuad(data) {
+  SendPort? sendPort;
+  final receivePort = ReceivePort();
+  receivePort.listen((data) async {
+    if (data is BGRImage) {
+      try {
+        sendPort?.send(Quad.from(detectQuad(data)));
+      }
+      catch(_) {
+        sendPort?.send(Quad.empty);
+      }
+    }
+  });
+  if (data is SendPort) {
+    sendPort = data;
+    sendPort.send(receivePort.sendPort);
+    return;
+  }
+}
+
 class VisionState extends State<Vision> {
   late CameraDescription _camera;
   late CameraController _controller;
@@ -73,13 +105,18 @@ class VisionState extends State<Vision> {
   bool _isReady = false;
   bool _isDetecting = false;
 
-  List<Quad> detections = [];
+  final _receivePort = ReceivePort();
+  SendPort? _isolatePort;
+
+  Queue<Quad> detections = Queue();
   Quad? quad;
+  CameraImage? last;
 
   @override
   void initState() {
     super.initState();
     _initCamera();
+    _initDetection();
     mode = VisionMode.CameraWithPreview;
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
   }
@@ -90,37 +127,18 @@ class VisionState extends State<Vision> {
       _camera = cameras.first;
       _controller = CameraController(
         _camera,
-        ResolutionPreset.low,
+        ResolutionPreset.veryHigh,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.bgra8888,
       );
       await _controller.initialize();
+      await _controller.setFlashMode(FlashMode.torch);
       await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      _controller.startImageStream((CameraImage image) {
-        if (_isDetecting) return;
+      await _controller.startImageStream((CameraImage image) async {
+        if (_isDetecting || _isolatePort == null) return;
         _isDetecting = true;
-        Future.delayed(Duration(milliseconds: 10), () {
-          try {
-            final detection = detectQuad(image);
-            detections.insert(0, Quad.from(detection));
-            // Keeping some detections to reduce flickering
-            if (detections.length > 5) {
-              detections.length = 5;
-            }
-            List<Quad> quads = detections
-                .where((e) => (e.topLeft.x +
-                e.topRight.x +
-                e.bottomLeft.x +
-                e.bottomRight.x >
-                0))
-                .toList();
-            setState(() {
-              quad = quads.length > 0 ? quads.first : null;
-            });
-          } finally {
-            _isDetecting = false;
-          }
-        });
+        _isolatePort?.send(cameraImageToBGRBytes(image, maxWidth: 320));
+        last = image;
       });
       setState(() {
         _isReady = true;
@@ -128,34 +146,25 @@ class VisionState extends State<Vision> {
     }
   }
 
-  Future<CameraImage> _takePicture() async {
-    setState(() {
-      _isReady = false;
-    });
-    await _controller.stopImageStream();
-    await _controller.dispose();
-    _controller = CameraController(
-      _camera,
-      ResolutionPreset.max,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.bgra8888,
-    );
-    await _controller.initialize();
-    await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-    Completer<CameraImage> c = new Completer();
-    bool captured = false;
-    await _controller.startImageStream((CameraImage image) async {
-      if (!captured) {
-        captured = true;
-        print("image captured");
-        await _controller.stopImageStream();
-        await _controller.dispose();
-        // TODO warp image with opencv
-        // https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#image-processing
-        c.complete(image);
+  Future<void> _initDetection() async {
+    await Isolate.spawn<SendPort>(_detectQuad, _receivePort.sendPort, onError: _receivePort.sendPort, onExit: _receivePort.sendPort);
+    _receivePort.listen((data) {
+      if (data is SendPort) {
+        _isolatePort = data;
+      }
+      else if (data is Quad) {
+        detections.addFirst(data);
+        // Keeping some detections to reduce flickering
+        if (detections.length > 5) {
+          detections.removeLast();
+        }
+        List<Quad> quads = detections.where((e) => !e.isEmpty).toList();
+        setState(() {
+          _isDetecting = false;
+          quad = quads.length > 0 ? quads.first : null;
+        });
       }
     });
-    return c.future;
   }
 
   set mode(VisionMode mode) {
@@ -191,23 +200,33 @@ class VisionState extends State<Vision> {
             child: CustomPaint(
                 foregroundPainter: QuadPainter(
                     quad: quad,
-                    transparent: _mode == VisionMode.CameraWithPreview),
+                    transparent: _mode == VisionMode.CameraWithPreview,
+                    draw: _isReady),
                 child: GestureDetector(
                   child: _isReady && _controller.value.isInitialized
                       ? CameraPreview(_controller)
                       : Container(color: Color(0xff000000)),
                   onTap: () async {
-                    if (quad != null) {
-                      CameraImage image = await _takePicture();
-                      print("${image.width}x${image.height}");
-                      await Navigator.push(context, MaterialPageRoute(builder: (context) => Narrator()));
+                    if (last != null && quad != null) {
+                      setState(() {
+                        _isReady = false;
+                      });
+                      await _controller.stopImageStream();
+                      await _controller.dispose();
+                      final String path = (await getTemporaryDirectory()).path + "/capture${DateTime.now().millisecondsSinceEpoch}.jpeg";
+                      warpImage(cameraImageToBGRBytes(last!), quad!, path);
+                      //TODO OCR : https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#image-processing
+                      await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => Narrator(path)));
                       await _initCamera();
                     } else {
-                      Speech().speak("Le document n'est plus devant l'appareil");
+                      Speech()
+                          .speak("Le document n'est plus devant l'appareil");
                     }
                   },
                   onPanEnd: (details) {
-                    print(details);
                     if (details.velocity.pixelsPerSecond.dx.abs() >
                         details.velocity.pixelsPerSecond.dy.abs()) {
                       if (details.velocity.pixelsPerSecond.dx > 0) {

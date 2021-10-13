@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:malo/services/speech.dart';
 
 class Narrator extends StatefulWidget {
+  Narrator(this.path);
+
+  final String path;
 
   @override
   NarratorState createState() => NarratorState();
@@ -19,7 +24,7 @@ class NarratorState extends State<Narrator> {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-      child: Container(color: Color.fromARGB(255, 0, 255, 0)),
+      child: Container(color: Color.fromARGB(255, 0, 255, 0), child: Image.file(File(widget.path))),
       onTap: () {
         Speech().stop();
         Speech().speak("Lecture arrêtée");
