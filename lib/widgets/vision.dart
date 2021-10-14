@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:malo/opencv.dart';
@@ -25,7 +26,12 @@ class Quad {
     if (d == null) {
       return Quad.empty;
     }
-    List<Point> points = [Point(d.x1, d.y1), Point(d.x2, d.y2), Point(d.x3, d.y3), Point(d.x4, d.y4)];
+    List<Point> points = [
+      Point(d.x1, d.y1),
+      Point(d.x2, d.y2),
+      Point(d.x3, d.y3),
+      Point(d.x4, d.y4)
+    ];
     points.sort((a, b) => a.x.compareTo(b.x));
     List<Point> lefts = points.sublist(0, 2);
     List<Point> rights = points.sublist(2, 4);
@@ -34,20 +40,45 @@ class Quad {
     return Quad(lefts[0], rights[0], rights[1], lefts[1]);
   }
 
-  bool get isEmpty => topLeft.x + topLeft.y + topRight.x + topRight.y + bottomLeft.x + bottomLeft.y + bottomRight.x + bottomRight.y == 0;
+  bool get isEmpty =>
+      topLeft.x +
+          topLeft.y +
+          topRight.x +
+          topRight.y +
+          bottomLeft.x +
+          bottomLeft.y +
+          bottomRight.x +
+          bottomRight.y ==
+      0;
+
+  double get area =>
+      ((topLeft.x * topRight.y +
+              topRight.x * bottomRight.y +
+              bottomRight.x * bottomLeft.y +
+              bottomLeft.x * topLeft.y) -
+          (topRight.x * topLeft.y +
+              bottomRight.x * topRight.y +
+              bottomLeft.x * bottomRight.y +
+              topLeft.x * bottomLeft.y)) /
+          2;
 }
 
 class QuadPainter extends CustomPainter {
-  QuadPainter({this.quad, required this.transparent, required this.draw});
+  QuadPainter(
+      {this.quad,
+      required this.transparent,
+      required this.draw,
+      required this.alpha});
 
   Quad? quad;
   bool transparent;
   bool draw;
+  int alpha;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset(0, 0) & size,
-        Paint()..color = Color.fromARGB(transparent ? 200 : 255, 0, 0, 0));
+        Paint()..color = Color.fromARGB(transparent ? alpha : 255, 0, 0, 0));
     if (this.quad != null && this.draw) {
       final path = Path()
         ..moveTo(this.quad!.topLeft.x * size.width,
@@ -60,7 +91,7 @@ class QuadPainter extends CustomPainter {
             this.quad!.bottomLeft.y * size.height)
         ..close();
       canvas.drawPath(
-          path, Paint()..color = Color.fromARGB(255, 255, 255, 255));
+          path, Paint()..color = Color.fromARGB(alpha, 255, 255, 255));
     }
   }
 
@@ -84,8 +115,7 @@ void _detectQuad(data) {
     if (data is BGRImage) {
       try {
         sendPort?.send(Quad.from(detectQuad(data)));
-      }
-      catch(_) {
+      } catch (_) {
         sendPort?.send(Quad.empty);
       }
     }
@@ -97,10 +127,12 @@ void _detectQuad(data) {
   }
 }
 
-class VisionState extends State<Vision> with WidgetsBindingObserver {
+class VisionState extends State<Vision>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late CameraDescription _camera;
   late CameraController _controller;
   late VisionMode _mode;
+  late Ticker _ticker;
 
   bool _isReady = false;
   bool _isDetecting = false;
@@ -108,18 +140,60 @@ class VisionState extends State<Vision> with WidgetsBindingObserver {
   final _receivePort = ReceivePort();
   SendPort? _isolatePort;
 
-  Queue<Quad> detections = Queue();
-  Quad? quad;
+  Quad target = Quad.empty;
   CameraImage? last;
+
+  Quad current = Quad.empty;
+  int alpha = 0;
+  int time = 0;
 
   @override
   void initState() {
     super.initState();
     _initCamera();
     _initDetection();
+    _initAnimation();
     mode = VisionMode.CameraWithPreview;
     WidgetsBinding.instance?.addObserver(this);
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
+  }
+
+  Future<void> _initAnimation() async {
+    _ticker = createTicker((Duration elapsed) {
+      int delta = elapsed.inMilliseconds - time;
+      int alphaSpeed = (255 * delta / 300).round();
+
+      if (target.isEmpty) {
+        setState(() {
+          alpha = max(alpha - alphaSpeed, 0);
+          if (alpha == 0) {
+            current = Quad.empty;
+          }
+        });
+      } else {
+        setState(() {
+          alpha = min(alpha + alphaSpeed, 255);
+          if (current.isEmpty) {
+            current = target;
+          } else {
+            current.topLeft += (target.topLeft * 0.1 - current.topLeft * 0.1);
+            current.topRight +=
+                (target.topRight * 0.1 - current.topRight * 0.1);
+            current.bottomRight +=
+                (target.bottomRight * 0.1 - current.bottomRight * 0.1);
+            current.bottomLeft +=
+                (target.bottomLeft * 0.1 - current.bottomLeft * 0.1);
+          }
+        });
+        // TODO add vocal instructions
+        // TODO add movement detection for better capture
+        if (alpha == 255 && current.area > 0.55) {
+          doOCR();
+        }
+      }
+      time = elapsed.inMilliseconds;
+    });
+    await _ticker.start();
   }
 
   Future<void> _initCamera() async {
@@ -155,24 +229,43 @@ class VisionState extends State<Vision> with WidgetsBindingObserver {
   }
 
   Future<void> _initDetection() async {
-    await Isolate.spawn<SendPort>(_detectQuad, _receivePort.sendPort, onError: _receivePort.sendPort, onExit: _receivePort.sendPort);
+    await Isolate.spawn<SendPort>(_detectQuad, _receivePort.sendPort,
+        onError: _receivePort.sendPort, onExit: _receivePort.sendPort);
     _receivePort.listen((data) {
       if (data is SendPort) {
         _isolatePort = data;
-      }
-      else if (data is Quad) {
-        detections.addFirst(data);
-        // Keeping some detections to reduce flickering
-        if (detections.length > 5) {
-          detections.removeLast();
-        }
-        List<Quad> quads = detections.where((e) => !e.isEmpty).toList();
+      } else if (data is Quad) {
         setState(() {
           _isDetecting = false;
-          quad = quads.length > 0 ? quads.first : null;
+          target = data;
         });
       }
     });
+  }
+
+  Future<void> doOCR() async {
+    if (last != null && _isReady) {
+      setState(() {
+        _isReady = false;
+      });
+      if (_controller.value.isInitialized) {
+        await _controller.stopImageStream();
+        await _controller.dispose();
+      }
+      final String path = (await getTemporaryDirectory()).path +
+          "/capture${DateTime.now().millisecondsSinceEpoch}.png";
+      warpImage(cameraImageToBGRBytes(last!), current, path);
+      setState(() {
+        current = Quad.empty;
+        target = Quad.empty;
+        alpha = 0;
+      });
+      await Navigator.push(
+          context, MaterialPageRoute(builder: (context) => Narrator(path)));
+      await _initCamera();
+    } else {
+      Speech().speak("Le document n'est plus devant l'appareil");
+    }
   }
 
   set mode(VisionMode mode) {
@@ -192,6 +285,7 @@ class VisionState extends State<Vision> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _ticker.dispose();
     _controller.dispose();
     WidgetsBinding.instance?.removeObserver(this);
     super.dispose();
@@ -208,43 +302,23 @@ class VisionState extends State<Vision> with WidgetsBindingObserver {
             scale: scale,
             child: CustomPaint(
                 foregroundPainter: QuadPainter(
-                    quad: quad,
+                    quad: current,
                     transparent: _mode == VisionMode.CameraWithPreview,
-                    draw: _isReady),
+                    draw: _isReady,
+                    alpha: alpha),
                 child: GestureDetector(
                   child: _isReady && _controller.value.isInitialized
                       ? CameraPreview(_controller)
                       : Container(color: Color(0xff000000)),
                   onTap: () async {
-                    if (last != null && quad != null) {
-                      setState(() {
-                        _isReady = false;
-                      });
-                      await _controller.stopImageStream();
-                      await _controller.dispose();
-                      final String path = (await getTemporaryDirectory()).path + "/capture${DateTime.now().millisecondsSinceEpoch}.png";
-                      warpImage(cameraImageToBGRBytes(last!), quad!, path);
-                      await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => Narrator(path)));
-                      await _initCamera();
-                    } else {
-                      Speech()
-                          .speak("Le document n'est plus devant l'appareil");
-                    }
+                    /*
+                     */
                   },
                   onPanEnd: (details) {
                     if (details.velocity.pixelsPerSecond.dx.abs() >
                         details.velocity.pixelsPerSecond.dy.abs()) {
-                      if (details.velocity.pixelsPerSecond.dx > 0) {
-                        setState(() {
-                          mode = _mode == VisionMode.CameraWithPreview
-                              ? VisionMode.CameraWithoutPreview
-                              : VisionMode.CameraWithPreview;
-                        });
-                      }
-                      if (details.velocity.pixelsPerSecond.dx < 0) {
+                      if (details.velocity.pixelsPerSecond.dx > 0 ||
+                          details.velocity.pixelsPerSecond.dx < 0) {
                         setState(() {
                           mode = _mode == VisionMode.CameraWithPreview
                               ? VisionMode.CameraWithoutPreview
