@@ -27,7 +27,6 @@ dependencies:
   flutter_launcher_icons: ^0.9.2
   path_provider: ^2.0.5
   flutter_tesseract_ocr: ^0.4.16
-  flutter_native_splash: ^1.2.4
 
 dev_dependencies:
   flutter_test:
@@ -38,14 +37,6 @@ flutter_icons:
   android: false
   web: false
   image_path: "assets/images/app_icon.png"
-
-flutter_native_splash:
-  ios: true
-  android: false
-  web: false
-  color: "#000000"
-  image: "assets/images/app_splash.png"
-  fullscreen: true
 
 flutter:
 

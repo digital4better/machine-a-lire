@@ -26,11 +26,8 @@ Resources :
 - https://developer.apple.com/documentation/vision/vndetectrectanglesrequest
 - https://hochgatterer.me/blog/invoice-scanning/
 
-## Icon and Splash generation
+## Icon generation
 
 ```sh
 $ flutter pub run flutter_launcher_icons:main
-```
-```sh
-$ flutter pub run flutter_native_splash:create
 ```
