@@ -25,3 +25,12 @@ Resources :
 - https://www.flutterclutter.dev/flutter/tutorials/implementing-edge-detection-in-flutter/2020/1509/
 - https://developer.apple.com/documentation/vision/vndetectrectanglesrequest
 - https://hochgatterer.me/blog/invoice-scanning/
+
+## Icon and Splash generation
+
+```sh
+$ flutter pub run flutter_launcher_icons:main
+```
+```sh
+$ flutter pub run flutter_native_splash:create
+```

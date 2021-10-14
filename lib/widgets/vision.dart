@@ -97,7 +97,7 @@ void _detectQuad(data) {
   }
 }
 
-class VisionState extends State<Vision> {
+class VisionState extends State<Vision> with WidgetsBindingObserver {
   late CameraDescription _camera;
   late CameraController _controller;
   late VisionMode _mode;
@@ -118,6 +118,7 @@ class VisionState extends State<Vision> {
     _initCamera();
     _initDetection();
     mode = VisionMode.CameraWithPreview;
+    WidgetsBinding.instance?.addObserver(this);
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
   }
 
@@ -143,6 +144,13 @@ class VisionState extends State<Vision> {
       setState(() {
         _isReady = true;
       });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed && _controller.value.isInitialized) {
+      await _controller.setFlashMode(FlashMode.torch);
     }
   }
 
@@ -185,6 +193,7 @@ class VisionState extends State<Vision> {
   @override
   void dispose() {
     _controller.dispose();
+    WidgetsBinding.instance?.removeObserver(this);
     super.dispose();
   }
 
