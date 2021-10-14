@@ -12,11 +12,11 @@
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
-		F86314A22718866B00B1A21C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F86314A12718866B00B1A21C /* LaunchScreen.storyboard */; };
 		CFF49ACC54A766483708497F /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7CDD28141227347D581BABD /* Pods_Runner.framework */; };
 		F85336AC2704C3C2005937E4 /* opencv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F85336AB2704C3C2005937E4 /* opencv.cpp */; };
 		F863149A27176E4500B1A21C /* tessdata in Resources */ = {isa = PBXBuildFile; fileRef = F863149927176E4500B1A21C /* tessdata */; };
 		F863149E27176E6A00B1A21C /* tessdata_config.json in Resources */ = {isa = PBXBuildFile; fileRef = F863149D27176E6A00B1A21C /* tessdata_config.json */; };
+		F86314A52718893E00B1A21C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F86314A32718893E00B1A21C /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,12 +47,12 @@
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		97C146FB1CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		F86314A12718866B00B1A21C /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D7CDD28141227347D581BABD /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F85336AB2704C3C2005937E4 /* opencv.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = opencv.cpp; path = Classes/opencv.cpp; sourceTree = "<group>"; };
 		F863149927176E4500B1A21C /* tessdata */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tessdata; path = ../../assets/tessdata; sourceTree = "<group>"; };
 		F863149D27176E6A00B1A21C /* tessdata_config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = tessdata_config.json; path = ../../assets/tessdata_config.json; sourceTree = "<group>"; };
+		F86314A42718893E00B1A21C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,7 +115,7 @@
 				F863149927176E4500B1A21C /* tessdata */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
-				F86314A12718866B00B1A21C /* LaunchScreen.storyboard */,
+				F86314A32718893E00B1A21C /* LaunchScreen.storyboard */,
 				97C147021CF9000F007C117D /* Info.plist */,
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
@@ -199,7 +199,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				F863149A27176E4500B1A21C /* tessdata in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
-				F86314A22718866B00B1A21C /* LaunchScreen.storyboard in Resources */,
+				F86314A52718893E00B1A21C /* LaunchScreen.storyboard in Resources */,
 				F863149E27176E6A00B1A21C /* tessdata_config.json in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 			);
@@ -297,6 +297,14 @@
 				97C146FB1CF9000F007C117D /* Base */,
 			);
 			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		F86314A32718893E00B1A21C /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				F86314A42718893E00B1A21C /* Base */,
+			);
+			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
