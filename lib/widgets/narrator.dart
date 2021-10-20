@@ -1,6 +1,8 @@
+import 'dart:math';
+
 import 'package:flutter/widgets.dart';
-import 'package:malo/services/speech.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import 'package:malo/services/speech.dart';
 
 class Narrator extends StatefulWidget {
   Narrator(this.path);
@@ -11,54 +13,99 @@ class Narrator extends StatefulWidget {
   NarratorState createState() => NarratorState();
 }
 
+class Span {
+  final String text;
+  final GlobalKey key = GlobalKey();
+
+  Span(this.text);
+}
+
+const double PADDING = 30;
+
 class NarratorState extends State<Narrator> {
-  List<String> _text = [];
+  final _controller = ScrollController();
+  List<Span> _text = [];
+  int _index = -1;
 
   @override
   void initState() {
     super.initState();
     _parseText();
-    Speech().stop();
-    Speech()
-        .speak("La lecture va commencer, appuyez sur l’écran pour l’arrêter");
   }
 
   Future<void> _parseText() async {
-    String text = await FlutterTesseractOcr.extractText(widget.path,
+    await Speech().stop();
+    final text = await FlutterTesseractOcr.extractText(widget.path,
         language: 'fra',
         args: {
           "psm": "6",
           "preserve_interword_spaces": "1",
         });
-    // TODO post process text for cleanup or use multiple pass with different psm values
-    print(text);
-    Speech().speak(text);
     setState(() {
-      _text = [text];
+      _text = text
+          .replaceAllMapped(RegExp(r"\s*([,;.:?!])(?:\s*[,;.:?!])*\s*"),
+              (Match m) => "${m[1]} ")
+          .replaceAll(RegExp(r"[|#&$£{}()\[\]]+"), "")
+          .replaceAll(RegExp(r"\s+"), " ")
+          .split(RegExp(r"(?<=[.:?!]\s)"))
+          .map((t) => Span(t))
+          .toList();
     });
+    await Speech().speak("La lecture va commencer, appuyez pour l’arrêter.");
+    // Play
+    setState(() {
+      _index = 0;
+    });
+    while (_index < _text.length) {
+      RenderBox? box =
+          _text[_index].key.currentContext?.findRenderObject() as RenderBox?;
+      if (box != null) {
+        int delta = box.localToGlobal(Offset.zero).dy.toInt();
+        _controller.animateTo(
+          min(_controller.offset + delta - PADDING,
+              _controller.position.maxScrollExtent),
+          duration: Duration(milliseconds: 500),
+          curve: Curves.fastOutSlowIn,
+        );
+      }
+      await Speech().speak(_text[_index].text);
+      setState(() {
+        _index += 1;
+      });
+    }
+    await Speech().speak("Fin de la lecture.");
   }
 
   @override
   Widget build(BuildContext context) => GestureDetector(
       child: Container(
         color: Color.fromARGB(255, 0, 0, 0),
-        child: ListView(
-          //child: Image.file(File(widget.path))
-          padding: EdgeInsets.fromLTRB(10, 30, 10, 30),
-          children: _text
-              .map((t) => Text(
-                    t,
-                    style: TextStyle(
-                      fontSize: 32.0,
-                      fontWeight: FontWeight.w400,
-                      color: Color.fromARGB(255, 255, 255, 255),
-                      decoration: TextDecoration.none,
-                    ),
-                  ))
-              .toList(),
+        child: SingleChildScrollView(
+          controller: _controller,
+          padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.generate(
+                  _text.length,
+                  (i) => Padding(
+                      key: _text[i].key,
+                      padding: EdgeInsets.only(bottom: PADDING),
+                      child: Text(
+                        _text[i].text,
+                        style: TextStyle(
+                          fontSize: 32.0,
+                          fontWeight: FontWeight.w400,
+                          color: Color.fromARGB(
+                              _index == i ? 255 : 127, 255, 255, 255),
+                          decoration: TextDecoration.none,
+                        ),
+                      )))),
         ),
       ),
       onTap: () {
+        setState(() {
+          _index = -1;
+        });
         Speech().stop();
         Speech().speak("Lecture arrêtée");
         Navigator.pop(context);

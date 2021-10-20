@@ -10,11 +10,13 @@ class Speech {
 
   Speech._internal() {
     _tts = FlutterTts();
+    _tts.awaitSpeakCompletion(true);
     _tts.setLanguage('fr');
-    _tts.setSpeechRate(0.4);
+    _tts.setVoice({"locale": "fr-FR", "name": "Thomas"});
+    _tts.setSpeechRate(0.5);
   }
 
-  void speak(String text) async =>_tts.speak(text);
-  void pause() async =>_tts.pause();
-  void stop() async =>_tts.stop();
+  Future<dynamic> speak(String text) async =>_tts.speak(text);
+  Future<dynamic> pause() async =>_tts.pause();
+  Future<dynamic> stop() async =>_tts.stop();
 }

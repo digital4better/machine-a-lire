@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:isolate';
 import 'dart:math';
 
@@ -66,19 +65,17 @@ class Quad {
 class QuadPainter extends CustomPainter {
   QuadPainter(
       {this.quad,
-      required this.transparent,
       required this.draw,
       required this.alpha});
 
   Quad? quad;
-  bool transparent;
   bool draw;
   int alpha;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset(0, 0) & size,
-        Paint()..color = Color.fromARGB(transparent ? alpha : 255, 0, 0, 0));
+        Paint()..color = Color.fromARGB(alpha, 0, 0, 0));
     if (this.quad != null && this.draw) {
       final path = Path()
         ..moveTo(this.quad!.topLeft.x * size.width,
@@ -106,7 +103,7 @@ class Vision extends StatefulWidget {
   VisionState createState() => VisionState();
 }
 
-enum VisionMode { CameraWithPreview, CameraWithoutPreview }
+enum VisionMode { Document }
 
 void _detectQuad(data) {
   SendPort? sendPort;
@@ -153,7 +150,7 @@ class VisionState extends State<Vision>
     _initCamera();
     _initDetection();
     _initAnimation();
-    mode = VisionMode.CameraWithPreview;
+    mode = VisionMode.Document;
     WidgetsBinding.instance?.addObserver(this);
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
   }
@@ -270,13 +267,9 @@ class VisionState extends State<Vision>
 
   set mode(VisionMode mode) {
     _mode = mode;
-    Speech().stop();
     switch (_mode) {
-      case VisionMode.CameraWithoutPreview:
-        Speech().speak("Mode lecture");
-        break;
-      case VisionMode.CameraWithPreview:
-        Speech().speak("Mode lecture avec prévisualisation");
+      case VisionMode.Document:
+        Speech().speak("Mode document");
         break;
       default:
         break;
@@ -303,7 +296,6 @@ class VisionState extends State<Vision>
             child: CustomPaint(
                 foregroundPainter: QuadPainter(
                     quad: current,
-                    transparent: _mode == VisionMode.CameraWithPreview,
                     draw: _isReady,
                     alpha: alpha),
                 child: GestureDetector(
@@ -311,8 +303,8 @@ class VisionState extends State<Vision>
                       ? CameraPreview(_controller)
                       : Container(color: Color(0xff000000)),
                   onTap: () async {
-                    /*
-                     */
+                    //await Navigator.push(
+                    //    context, MaterialPageRoute(builder: (context) => Narrator("demo")));
                   },
                   onPanEnd: (details) {
                     if (details.velocity.pixelsPerSecond.dx.abs() >
@@ -320,9 +312,7 @@ class VisionState extends State<Vision>
                       if (details.velocity.pixelsPerSecond.dx > 0 ||
                           details.velocity.pixelsPerSecond.dx < 0) {
                         setState(() {
-                          mode = _mode == VisionMode.CameraWithPreview
-                              ? VisionMode.CameraWithoutPreview
-                              : VisionMode.CameraWithPreview;
+                          // TODO switch mode
                         });
                       }
                     }

@@ -12,7 +12,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   MyApp() {
-    Speech().speak("Bonjour !");
+    Speech().speak("Bienvenue !");
   }
 
   @override
