@@ -45,16 +45,16 @@ class NarratorState extends State<Narrator> {
       _text = text
           .replaceAllMapped(RegExp(r"\s*([,;.:?!])(?:\s*[,;.:?!])*\s*"),
               (Match m) => "${m[1]} ")
-          .replaceAll(RegExp(r"[|#&$£{}()\[\]]+"), "")
+          .replaceAll(RegExp(r"[|©#&$£€=*%+_`/{}()\[\]]+"), "")
           .replaceAll(RegExp(r"\s+"), " ")
           .split(RegExp(r"(?<=[.:?!]\s)"))
           .map((t) => Span(t))
           .toList();
     });
-    await Speech().speak("La lecture va commencer, appuyez pour l’arrêter.");
-    // Play
-    setState(() {
-      _index = 0;
+    await Speech().speak("La lecture va commencer, appuyez pour l’arrêter.").then((_) {
+      setState(() {
+        _index = 0;
+      });
     });
     while (_index < _text.length) {
       RenderBox? box =

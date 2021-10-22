@@ -156,9 +156,12 @@ class VisionState extends State<Vision>
   }
 
   Future<void> _initAnimation() async {
+    int tock = 0;
     _ticker = createTicker((Duration elapsed) {
-      int delta = elapsed.inMilliseconds - time;
-      int alphaSpeed = (255 * delta / 300).round();
+      final int delta = elapsed.inMilliseconds - time;
+      final int alphaSpeed = (255 * delta / 300).round();
+      final int minTockSpeed = 60;
+      final int maxTockSpeed = 3;
 
       if (target.isEmpty) {
         setState(() {
@@ -182,13 +185,23 @@ class VisionState extends State<Vision>
                 (target.bottomLeft * 0.1 - current.bottomLeft * 0.1);
           }
         });
-        // TODO add vocal instructions
-        // TODO add movement detection for better capture
-        if (alpha == 255 && current.area > 0.55) {
-          doOCR();
+        if (_isReady) {
+          // TODO add vocal instructions
+          // TODO add movement detection for better capture
+          // area > 0.55
+          if (alpha == 255) {
+            if (current.area > 0.55) {
+              doOCR();
+            }
+            else if (tock > (maxTockSpeed - minTockSpeed) * ((0.55 - min(0.55, current.area)) / 0.55) + maxTockSpeed) {
+              tock = 0;
+              HapticFeedback.lightImpact();
+            }
+          }
         }
       }
       time = elapsed.inMilliseconds;
+      tock++;
     });
     await _ticker.start();
   }
@@ -245,6 +258,7 @@ class VisionState extends State<Vision>
       setState(() {
         _isReady = false;
       });
+      await HapticFeedback.heavyImpact();
       if (_controller.value.isInitialized) {
         await _controller.stopImageStream();
         await _controller.dispose();
@@ -257,11 +271,10 @@ class VisionState extends State<Vision>
         target = Quad.empty;
         alpha = 0;
       });
+      await Speech().speak("Document capturé");
       await Navigator.push(
           context, MaterialPageRoute(builder: (context) => Narrator(path)));
       await _initCamera();
-    } else {
-      Speech().speak("Le document n'est plus devant l'appareil");
     }
   }
 
