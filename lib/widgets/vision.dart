@@ -193,7 +193,7 @@ class VisionState extends State<Vision>
             if (current.area > 0.55) {
               doOCR();
             }
-            else if (tock > (maxTockSpeed - minTockSpeed) * ((0.55 - min(0.55, current.area)) / 0.55) + maxTockSpeed) {
+            else if (tock > (minTockSpeed - maxTockSpeed) * ((0.55 - min(0.55, current.area)) / 0.55) + maxTockSpeed) {
               tock = 0;
               HapticFeedback.lightImpact();
             }

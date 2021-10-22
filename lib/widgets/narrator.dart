@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
 
 class Narrator extends StatefulWidget {
   Narrator(this.path);
@@ -23,6 +23,7 @@ class Span {
 const double PADDING = 30;
 
 class NarratorState extends State<Narrator> {
+  final textDetector = GoogleMlKit.vision.textDetector();
   final _controller = ScrollController();
   List<Span> _text = [];
   int _index = -1;
@@ -35,12 +36,11 @@ class NarratorState extends State<Narrator> {
 
   Future<void> _parseText() async {
     await Speech().stop();
-    final text = await FlutterTesseractOcr.extractText(widget.path,
-        language: 'fra',
-        args: {
-          "psm": "6",
-          "preserve_interword_spaces": "1",
-        });
+    final recognized = await textDetector.processImage(
+        InputImage.fromFilePath(widget.path)
+    );
+    // TODO use block positions to rebuild text from column, etc...
+    final text = recognized.blocks.where((b) => b.recognizedLanguages.length > 0).map((e) => e.text).join("\n");
     setState(() {
       _text = text
           .replaceAllMapped(RegExp(r"\s*([,;.:?!])(?:\s*[,;.:?!])*\s*"),
