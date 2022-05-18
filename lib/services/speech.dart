@@ -14,9 +14,13 @@ class Speech {
     _tts.setLanguage('fr');
     _tts.setVoice({"locale": "fr-FR", "name": "Thomas"});
     _tts.setSpeechRate(0.5);
+    _tts.awaitSpeakCompletion(true);
   }
 
-  Future<dynamic> speak(String text) async =>_tts.speak(text);
-  Future<dynamic> pause() async =>_tts.pause();
-  Future<dynamic> stop() async =>_tts.stop();
+  Future speak(String text) async {
+    await _tts.stop();
+    return _tts.speak(text);
+  }
+  Future<dynamic> pause() async => _tts.pause();
+  Future<dynamic> stop() async => _tts.stop();
 }

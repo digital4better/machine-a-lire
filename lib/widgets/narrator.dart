@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
@@ -33,6 +34,12 @@ class NarratorState extends State<Narrator> {
     _parseText();
   }
 
+  @override
+  void dispose() {
+    Speech().stop();
+    super.dispose();
+  }
+
   Future<void> _parseText() async {
     await Speech().stop();
     final text = await FlutterTesseractOcr.extractText(widget.path,
@@ -51,7 +58,9 @@ class NarratorState extends State<Narrator> {
           .map((t) => Span(t))
           .toList();
     });
-    await Speech().speak("La lecture va commencer, appuyez pour l’arrêter.").then((_) {
+    await Speech()
+        .speak("La lecture va commencer, appuyez pour l’arrêter.")
+        .then((_) {
       setState(() {
         _index = 0;
       });
@@ -62,8 +71,10 @@ class NarratorState extends State<Narrator> {
       if (box != null) {
         int delta = box.localToGlobal(Offset.zero).dy.toInt();
         _controller.animateTo(
-          min(_controller.offset + delta - PADDING,
-              _controller.position.maxScrollExtent),
+          min(
+            _controller.offset + delta - PADDING,
+            _controller.position.maxScrollExtent,
+          ),
           duration: Duration(milliseconds: 500),
           curve: Curves.fastOutSlowIn,
         );
@@ -77,29 +88,33 @@ class NarratorState extends State<Narrator> {
   }
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) {
+    return GestureDetector(
       child: Container(
         color: Color.fromARGB(255, 0, 0, 0),
         child: SingleChildScrollView(
           controller: _controller,
           padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(
-                  _text.length,
-                  (i) => Padding(
-                      key: _text[i].key,
-                      padding: EdgeInsets.only(bottom: PADDING),
-                      child: Text(
-                        _text[i].text,
-                        style: TextStyle(
-                          fontSize: 32.0,
-                          fontWeight: FontWeight.w400,
-                          color: Color.fromARGB(
-                              _index == i ? 255 : 127, 255, 255, 255),
-                          decoration: TextDecoration.none,
-                        ),
-                      )))),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(
+              _text.length,
+              (i) => Padding(
+                key: _text[i].key,
+                padding: EdgeInsets.only(bottom: PADDING),
+                child: Text(
+                  _text[i].text,
+                  style: TextStyle(
+                    fontSize: 32.0,
+                    fontWeight: FontWeight.w400,
+                    color:
+                        Color.fromARGB(_index == i ? 255 : 127, 255, 255, 255),
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
       onTap: () {
@@ -109,5 +124,7 @@ class NarratorState extends State<Narrator> {
         Speech().stop();
         Speech().speak("Lecture arrêtée");
         Navigator.pop(context);
-      });
+      },
+    );
+  }
 }

@@ -166,11 +166,20 @@ struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     if (width == 0 || height == 0) {
         return &EMPTY;
     }
-    cv::Mat original(height, width, CV_8UC3, buf);
+
+    //cv::Mat original(height, width, CV_8UC1, buf);
+    // TODO : why adding height/2
+    cv::Mat original(height + height/2, width, CV_8UC1, buf);
+    // TODO : why 320 ? Why resize ?
+     double factor = 320.0 / width;
+     width *= factor;
+     height *= factor;
+    cv::resize(original, original, cv::Size(), factor, factor);
 
     cv::Mat gray, hsv;
     cv::Mat channels[3];
 
+    cv::cvtColor(original, original, cv::COLOR_YUV2BGR_I420);
     cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
     prepare(gray);
 
@@ -198,6 +207,7 @@ void warp_image(uint8_t *buf, int32_t width, int32_t height, double tl_x, double
     cv::Mat original(height, width, CV_8UC3, buf);
 
     cv::Mat warped, gray;
+    cv::cvtColor(original, original, cv::COLOR_YUV2BGR_I420);
     cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
 
     int maxWidth = width * MAX(sqrt((br_x - bl_x) * (br_x - bl_x) + (br_y - bl_y) * (br_y - bl_y)),

@@ -7,7 +7,8 @@ PODS:
     - SwiftyTesseract
   - flutter_tts (0.0.1):
     - Flutter
-  - OpenCV (4.3.0)
+  - native_opencv (4.5.3):
+    - Flutter
   - path_provider (0.0.1):
     - Flutter
   - SwiftyTesseract (3.1.3)
@@ -17,7 +18,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_tesseract_ocr (from `.symlinks/plugins/flutter_tesseract_ocr/ios`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
-  - OpenCV (~> 4.3.0)
+  - native_opencv (from `.symlinks/plugins/native_opencv/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
 
 SPEC REPOS:
@@ -34,6 +35,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_tesseract_ocr/ios"
   flutter_tts:
     :path: ".symlinks/plugins/flutter_tts/ios"
+  native_opencv:
+    :path: ".symlinks/plugins/native_opencv/ios"
   path_provider:
     :path: ".symlinks/plugins/path_provider/ios"
 
@@ -42,10 +45,10 @@ SPEC CHECKSUMS:
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
   flutter_tesseract_ocr: e7a711e46346f9b43598ca93871fe857bd6d8535
   flutter_tts: 0f492aab6accf87059b72354fcb4ba934304771d
-  OpenCV: 681e0451c1e54c5930a8922277f817ed5d5ab459
+  native_opencv: 0d3674ea766e4dff688cdce4a12d9e67e7b281fd
   path_provider: d1e9807085df1f9cc9318206cd649dc0b76be3de
   SwiftyTesseract: 1f3d96668ae92dc2208d9842c8a59bea9fad2cbb
 
-PODFILE CHECKSUM: b55c35c46b78b03656eb67fc1d23838ce895d813
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
 
 COCOAPODS: 1.11.2

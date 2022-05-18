@@ -2,71 +2,17 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:math';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:camera/camera.dart';
-import 'package:malo/opencv.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
+import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 
-class Quad {
-  Point topLeft;
-  Point topRight;
-  Point bottomLeft;
-  Point bottomRight;
-
-  Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
-
-  static Quad empty = Quad(Point(0, 0), Point(0, 0), Point(0, 0), Point(0, 0));
-
-  static Quad from(Detection? d) {
-    if (d == null) {
-      return Quad.empty;
-    }
-    List<Point> points = [
-      Point(d.x1, d.y1),
-      Point(d.x2, d.y2),
-      Point(d.x3, d.y3),
-      Point(d.x4, d.y4)
-    ];
-    points.sort((a, b) => a.x.compareTo(b.x));
-    List<Point> lefts = points.sublist(0, 2);
-    List<Point> rights = points.sublist(2, 4);
-    lefts.sort((a, b) => a.y.compareTo(b.y));
-    rights.sort((a, b) => a.y.compareTo(b.y));
-    return Quad(lefts[0], rights[0], rights[1], lefts[1]);
-  }
-
-  bool get isEmpty =>
-      topLeft.x +
-          topLeft.y +
-          topRight.x +
-          topRight.y +
-          bottomLeft.x +
-          bottomLeft.y +
-          bottomRight.x +
-          bottomRight.y ==
-      0;
-
-  double get area =>
-      ((topLeft.x * topRight.y +
-              topRight.x * bottomRight.y +
-              bottomRight.x * bottomLeft.y +
-              bottomLeft.x * topLeft.y) -
-          (topRight.x * topLeft.y +
-              bottomRight.x * topRight.y +
-              bottomLeft.x * bottomRight.y +
-              topLeft.x * bottomLeft.y)) /
-          2;
-}
-
 class QuadPainter extends CustomPainter {
-  QuadPainter(
-      {this.quad,
-      required this.draw,
-      required this.alpha});
+  QuadPainter({this.quad, required this.draw, required this.alpha});
 
   Quad? quad;
   bool draw;
@@ -74,8 +20,8 @@ class QuadPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset(0, 0) & size,
-        Paint()..color = Color.fromARGB(alpha, 0, 0, 0));
+    canvas.drawRect(
+        Offset(0, 0) & size, Paint()..color = Color.fromARGB(alpha, 0, 0, 0));
     if (this.quad != null && this.draw) {
       final path = Path()
         ..moveTo(this.quad!.topLeft.x * size.width,
@@ -109,7 +55,7 @@ void _detectQuad(data) {
   SendPort? sendPort;
   final receivePort = ReceivePort();
   receivePort.listen((data) async {
-    if (data is BGRImage) {
+    if (data is CameraImage) {
       try {
         sendPort?.send(Quad.from(detectQuad(data)));
       } catch (_) {
@@ -192,8 +138,10 @@ class VisionState extends State<Vision>
           if (alpha == 255) {
             if (current.area > 0.55) {
               doOCR();
-            }
-            else if (tock > (maxTockSpeed - minTockSpeed) * ((0.55 - min(0.55, current.area)) / 0.55) + maxTockSpeed) {
+            } else if (tock >
+                (maxTockSpeed - minTockSpeed) *
+                        ((0.55 - min(0.55, current.area)) / 0.55) +
+                    maxTockSpeed) {
               tock = 0;
               HapticFeedback.lightImpact();
             }
@@ -209,12 +157,15 @@ class VisionState extends State<Vision>
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
     if (cameras.length > 0) {
-      _camera = cameras.first;
+      _camera = cameras.firstWhere(
+        (element) => element.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
       _controller = CameraController(
         _camera,
         ResolutionPreset.veryHigh,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.bgra8888,
+        imageFormatGroup: ImageFormatGroup.yuv420,
       );
       await _controller.initialize();
       await _controller.setFlashMode(FlashMode.torch);
@@ -222,7 +173,7 @@ class VisionState extends State<Vision>
       await _controller.startImageStream((CameraImage image) async {
         if (_isDetecting || _isolatePort == null) return;
         _isDetecting = true;
-        _isolatePort?.send(cameraImageToBGRBytes(image, maxWidth: 320));
+        _isolatePort?.send(image);
         last = image;
       });
       setState(() {
@@ -304,32 +255,33 @@ class VisionState extends State<Vision>
     final ratio = _isReady ? _controller.value.aspectRatio * deviceRatio : 1.0;
     final scale = 1 / ratio;
     return Center(
-        child: Transform.scale(
-            scale: scale,
-            child: CustomPaint(
-                foregroundPainter: QuadPainter(
-                    quad: current,
-                    draw: _isReady,
-                    alpha: alpha),
-                child: GestureDetector(
-                  child: _isReady && _controller.value.isInitialized
-                      ? CameraPreview(_controller)
-                      : Container(color: Color(0xff000000)),
-                  onTap: () async {
-                    //await Navigator.push(
-                    //    context, MaterialPageRoute(builder: (context) => Narrator("demo")));
-                  },
-                  onPanEnd: (details) {
-                    if (details.velocity.pixelsPerSecond.dx.abs() >
-                        details.velocity.pixelsPerSecond.dy.abs()) {
-                      if (details.velocity.pixelsPerSecond.dx > 0 ||
-                          details.velocity.pixelsPerSecond.dx < 0) {
-                        setState(() {
-                          // TODO switch mode
-                        });
-                      }
-                    }
-                  },
-                ))));
+      child: Transform.scale(
+        scale: scale,
+        child: CustomPaint(
+          foregroundPainter:
+              QuadPainter(quad: current, draw: _isReady, alpha: alpha),
+          child: GestureDetector(
+            child: _isReady && _controller.value.isInitialized
+                ? CameraPreview(_controller)
+                : Container(color: Color(0xff000000)),
+            onTap: () async {
+              //await Navigator.push(
+              //    context, MaterialPageRoute(builder: (context) => Narrator("demo")));
+            },
+            onPanEnd: (details) {
+              if (details.velocity.pixelsPerSecond.dx.abs() >
+                  details.velocity.pixelsPerSecond.dy.abs()) {
+                if (details.velocity.pixelsPerSecond.dx > 0 ||
+                    details.velocity.pixelsPerSecond.dx < 0) {
+                  setState(() {
+                    // TODO switch mode
+                  });
+                }
+              }
+            },
+          ),
+        ),
+      ),
+    );
   }
 }

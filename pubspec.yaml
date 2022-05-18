@@ -24,6 +24,8 @@ dependencies:
   camera: ^0.9.4+21
   flutter_tts: ^3.3.3
   flutter_launcher_icons: ^0.9.2
+  native_opencv:
+    path: native_opencv
   ffi: ^1.1.2
   path_provider: ^2.0.5
   flutter_tesseract_ocr: ^0.4.17
