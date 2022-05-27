@@ -48,6 +48,7 @@ class NarratorState extends State<Narrator> {
           "psm": "6",
           "preserve_interword_spaces": "1",
         });
+    print("!!! TEXT !!! : $text");
     setState(() {
       _text = text
           .replaceAllMapped(RegExp(r"\s*([,;.:?!])(?:\s*[,;.:?!])*\s*"),

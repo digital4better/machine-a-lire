@@ -75,7 +75,7 @@ class BGRImage {
   BGRImage(this.bytes, this.width, this.height);
 }
 
-BGRImage cameraImageToBGRBytes(CameraImage image, {int maxWidth: 0}) {
+BGRImage cameraImageToBGRBytes(CameraImage image, {int maxWidth = 0}) {
   int factor = 1;
   int width = image.width;
   int height = image.height;
@@ -86,7 +86,7 @@ BGRImage cameraImageToBGRBytes(CameraImage image, {int maxWidth: 0}) {
   }
   final size = width * height * 3;
   Uint8List pixels = Uint8List(size);
-  if (image.format.group == ImageFormatGroup.bgra8888) {
+  /*if (image.format.group == ImageFormatGroup.bgra8888) {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         pixels[x * 3 + y * width * 3 + 0] = image.planes[0].bytes[
@@ -97,17 +97,26 @@ BGRImage cameraImageToBGRBytes(CameraImage image, {int maxWidth: 0}) {
             x * factor * 4 + y * factor * image.planes[0].bytesPerRow + 2];
       }
     }
-  } else if (image.format.group == ImageFormatGroup.yuv420) {
-    /** TODO : YUV to BGR
-     * float Y = data[i*step + j];
-        float U = data[ (int)(size + (i/2)*(step/2)  + j/2) ];
-        float V = data[ (int)(size*1.25 + (i/2)*(step/2) + j/2)];
-        float R = Y + 1.402 * (V - 128);
-        float G = Y - 0.344 * (U - 128) - 0.714 * (V - 128);
-        float B = Y + 1.772 * (U - 128);
-        if (R < 0){ R = 0; } if (G < 0){ G = 0; } if (B < 0){ B = 0; }
-        if (R > 255 ){ R = 255; } if (G > 255) { G = 255; } if (B > 255) { B = 255; }
-     */
+  } else*/ if (image.format.group == ImageFormatGroup.yuv420) {
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final int uvIndex = image.planes[1].bytesPerPixel! * (x/2).floor() + image.planes[1].bytesPerRow*(y/2).floor();
+        final int index = y * width + x;
+
+        final yp = image.planes[0].bytes[index];
+        final up = image.planes[1].bytes[uvIndex];
+        final vp = image.planes[2].bytes[uvIndex];
+
+        int r = (yp + vp * 1436 / 1024 - 179).round().clamp(0, 255);
+        int g = (yp - up * 46549 / 131072 + 44 -vp * 93604 / 131072 + 91).round().clamp(0, 255);
+        int b = (yp + up * 1814 / 1024 - 227).round().clamp(0, 255);
+
+        pixels[x * 3 + y * width * 3 + 0] = b;
+        pixels[x * 3 + y * width * 3 + 1] = g;
+        pixels[x * 3 + y * width * 3 + 2] = r;
+      }
+    }
   } else {
     // TODO return empty Detection
   }
@@ -153,7 +162,7 @@ class Quad {
 
   Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
 
-  static Quad empty = Quad(Point(0, 0), Point(0, 0), Point(0, 0), Point(0, 0));
+  static Quad empty = Quad(const Point(0, 0), const Point(0, 0), const Point(0, 0), const Point(0, 0));
 
   static Quad from(Detection? d) {
     if (d == null) {

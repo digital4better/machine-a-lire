@@ -20,18 +20,19 @@ class QuadPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-        Offset(0, 0) & size, Paint()..color = Color.fromARGB(alpha, 0, 0, 0));
+    /*canvas.drawRect(
+        Offset(0, 0) & size, Paint()..color = Color.fromARGB(alpha, 0, 0, 0));*/
     if (this.quad != null && this.draw) {
+
       final path = Path()
         ..moveTo(this.quad!.topLeft.x * size.width,
-            this.quad!.topLeft.y * size.height)
+            this.quad!.topLeft.y * (size.height))
         ..lineTo(this.quad!.topRight.x * size.width,
-            this.quad!.topRight.y * size.height)
+            this.quad!.topRight.y * (size.height))
         ..lineTo(this.quad!.bottomRight.x * size.width,
-            this.quad!.bottomRight.y * size.height)
+            this.quad!.bottomRight.y * (size.height))
         ..lineTo(this.quad!.bottomLeft.x * size.width,
-            this.quad!.bottomLeft.y * size.height)
+            this.quad!.bottomLeft.y * (size.height))
         ..close();
       canvas.drawPath(
           path, Paint()..color = Color.fromARGB(alpha, 255, 255, 255));
@@ -97,7 +98,7 @@ class VisionState extends State<Vision>
     _initDetection();
     _initAnimation();
     mode = VisionMode.Document;
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
   }
 
@@ -137,13 +138,14 @@ class VisionState extends State<Vision>
           // area > 0.55
           if (alpha == 255) {
             if (current.area > 0.55) {
+              print("AREA > 0.55 !!!!!!!");
               doOCR();
             } else if (tock >
                 (maxTockSpeed - minTockSpeed) *
                         ((0.55 - min(0.55, current.area)) / 0.55) +
                     maxTockSpeed) {
               tock = 0;
-              HapticFeedback.lightImpact();
+              //HapticFeedback.lightImpact();
             }
           }
         }
@@ -209,7 +211,7 @@ class VisionState extends State<Vision>
       setState(() {
         _isReady = false;
       });
-      await HapticFeedback.heavyImpact();
+      //await HapticFeedback.heavyImpact();
       if (_controller.value.isInitialized) {
         await _controller.stopImageStream();
         await _controller.dispose();
@@ -244,7 +246,7 @@ class VisionState extends State<Vision>
   void dispose() {
     _ticker.dispose();
     _controller.dispose();
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

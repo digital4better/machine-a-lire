@@ -75,7 +75,8 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
         }
     }
     if (quadArea > 0) {
-        return create_detection(quad, width, height);
+        //return create_detection(quad, width, height);
+        return create_detection(quad, width - width/4, height + height/4);
     }
     return nullptr;
 }
@@ -114,7 +115,7 @@ struct Detection *detect_quad_by_lines(cv::Mat &image, int width, int height) {
     int x1, y1, x2, y2, x3, y3, x4, y4;
 
     // 4 steps max
-    for (int t = width / 2; t >= width / 4 && quadArea == 0; t -= (width / 2 - width / 4) / 4) {
+    for (int t = width / 2; t >= width / 4 && quadArea == 0; t -= width / 16) {
         // Detecting line of minimum length t
         cv::HoughLines(image, lines, 1, CV_PI / 180, t);
         // Not enough lines
@@ -156,7 +157,8 @@ struct Detection *detect_quad_by_lines(cv::Mat &image, int width, int height) {
         }
     }
     if (quadArea > 0) {
-        return create_detection(quad, width, height);
+        //return create_detection(quad, width, height);
+        return create_detection(quad, width - width/4, height + height/4);
     }
     return nullptr;
 }
@@ -167,10 +169,7 @@ struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
         return &EMPTY;
     }
 
-    //cv::Mat original(height, width, CV_8UC1, buf);
-    // TODO : why adding height/2
     cv::Mat original(height + height/2, width, CV_8UC1, buf);
-    // TODO : why 320 ? Why resize ?
      double factor = 320.0 / width;
      width *= factor;
      height *= factor;
@@ -207,7 +206,6 @@ void warp_image(uint8_t *buf, int32_t width, int32_t height, double tl_x, double
     cv::Mat original(height, width, CV_8UC3, buf);
 
     cv::Mat warped, gray;
-    cv::cvtColor(original, original, cv::COLOR_YUV2BGR_I420);
     cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
 
     int maxWidth = width * MAX(sqrt((br_x - bl_x) * (br_x - bl_x) + (br_y - bl_y) * (br_y - bl_y)),
