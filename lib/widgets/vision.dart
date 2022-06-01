@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 
@@ -20,20 +21,34 @@ class QuadPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    /*canvas.drawRect(
-        Offset(0, 0) & size, Paint()..color = Color.fromARGB(alpha, 0, 0, 0));*/
+    canvas.drawRect(
+        Offset(0, 0) & size, Paint()..color = Color.fromARGB(alpha, 0, 0, 0));
     if (this.quad != null && this.draw) {
+      late Path path;
+      if (Platform.isAndroid) {
+        path = Path()
+          ..moveTo(this.quad!.topLeft.y * size.width,
+              this.quad!.topLeft.x * size.height)
+          ..lineTo(this.quad!.topRight.y * size.width,
+              this.quad!.topRight.x * size.height)
+          ..lineTo(this.quad!.bottomRight.y * size.width,
+              this.quad!.bottomRight.x * size.height)
+          ..lineTo(this.quad!.bottomLeft.y * size.width,
+              this.quad!.bottomLeft.x * size.height)
+          ..close();
+      } else {
+        path = Path()
+          ..moveTo(this.quad!.topLeft.x * size.width,
+              this.quad!.topLeft.y * size.height)
+          ..lineTo(this.quad!.topRight.x * size.width,
+              this.quad!.topRight.y * size.height)
+          ..lineTo(this.quad!.bottomRight.x * size.width,
+              this.quad!.bottomRight.y * size.height)
+          ..lineTo(this.quad!.bottomLeft.x * size.width,
+              this.quad!.bottomLeft.y * size.height)
+          ..close();
+      }
 
-      final path = Path()
-        ..moveTo(this.quad!.topLeft.x * size.width,
-            this.quad!.topLeft.y * (size.height))
-        ..lineTo(this.quad!.topRight.x * size.width,
-            this.quad!.topRight.y * (size.height))
-        ..lineTo(this.quad!.bottomRight.x * size.width,
-            this.quad!.bottomRight.y * (size.height))
-        ..lineTo(this.quad!.bottomLeft.x * size.width,
-            this.quad!.bottomLeft.y * (size.height))
-        ..close();
       canvas.drawPath(
           path, Paint()..color = Color.fromARGB(alpha, 255, 255, 255));
     }
@@ -75,21 +90,36 @@ class VisionState extends State<Vision>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late CameraDescription _camera;
   late CameraController _controller;
-  late VisionMode _mode;
   late Ticker _ticker;
-
-  bool _isReady = false;
+  late String _imagesRootPath;
+  late Size _size;
+  late double _deviceRatio;
+  String? _rawPath;
+  bool _isScanning = false;
   bool _isDetecting = false;
 
   final _receivePort = ReceivePort();
   SendPort? _isolatePort;
 
   Quad target = Quad.empty;
-  CameraImage? last;
+  CameraImage? _lastCameraImage;
 
   Quad current = Quad.empty;
   int alpha = 0;
   int time = 0;
+
+  /// Makes sure that camera stream and torch is off if app is not running.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (_controller.value.isInitialized) {
+      if (state == AppLifecycleState.resumed && _isScanning) {
+        await _startImageStream();
+      } else {
+        await _stopImageStream();
+        await _controller.setFlashMode(FlashMode.off);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -97,9 +127,13 @@ class VisionState extends State<Vision>
     _initCamera();
     _initDetection();
     _initAnimation();
-    mode = VisionMode.Document;
-    WidgetsBinding.instance.addObserver(this);
-    //Speech().speak("Mode lecture, mettez un document devant l’appareil photo ou faites glisser l’écran pour changer de mode");
+    _initImagesPath();
+
+    WidgetsBinding.instance?.addObserver(this);
+  }
+
+  Future<void> _initImagesPath() async {
+    _imagesRootPath = (await getExternalStorageDirectory())?.path ?? "";
   }
 
   Future<void> _initAnimation() async {
@@ -132,13 +166,12 @@ class VisionState extends State<Vision>
                 (target.bottomLeft * 0.1 - current.bottomLeft * 0.1);
           }
         });
-        if (_isReady) {
+        if (_isScanning) {
           // TODO add vocal instructions
           // TODO add movement detection for better capture
           // area > 0.55
           if (alpha == 255) {
             if (current.area > 0.55) {
-              print("AREA > 0.55 !!!!!!!");
               doOCR();
             } else if (tock >
                 (maxTockSpeed - minTockSpeed) *
@@ -158,6 +191,7 @@ class VisionState extends State<Vision>
 
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
+
     if (cameras.length > 0) {
       _camera = cameras.firstWhere(
         (element) => element.lensDirection == CameraLensDirection.back,
@@ -165,35 +199,48 @@ class VisionState extends State<Vision>
       );
       _controller = CameraController(
         _camera,
-        ResolutionPreset.veryHigh,
+        ResolutionPreset.ultraHigh,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
       await _controller.initialize();
-      await _controller.setFlashMode(FlashMode.torch);
       await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      await _controller.startImageStream((CameraImage image) async {
-        if (_isDetecting || _isolatePort == null) return;
-        _isDetecting = true;
-        _isolatePort?.send(image);
-        last = image;
-      });
+      await _startImageStream();
+
       setState(() {
-        _isReady = true;
+        _isScanning = true;
       });
     }
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    if (state == AppLifecycleState.resumed && _controller.value.isInitialized) {
-      await _controller.setFlashMode(FlashMode.torch);
-    }
+  Future _startImageStream() async {
+    Speech().speak(
+        "Scan de document prêt, présentez un document devant l’appareil.");
+
+    await _controller.startImageStream((CameraImage image) async {
+      if (_isDetecting || _isolatePort == null) return;
+      _isDetecting = true;
+      _isolatePort?.send(image);
+      _lastCameraImage = image;
+    });
+    await _controller.setFlashMode(FlashMode.torch);
+  }
+
+  Future _stopImageStream() async {
+    alpha = 0;
+
+    await _controller.stopImageStream();
+    _isDetecting = false;
   }
 
   Future<void> _initDetection() async {
-    await Isolate.spawn<SendPort>(_detectQuad, _receivePort.sendPort,
-        onError: _receivePort.sendPort, onExit: _receivePort.sendPort);
+    await Isolate.spawn<SendPort>(
+      _detectQuad,
+      _receivePort.sendPort,
+      onError: _receivePort.sendPort,
+      onExit: _receivePort.sendPort,
+    );
+
     _receivePort.listen((data) {
       if (data is SendPort) {
         _isolatePort = data;
@@ -207,38 +254,64 @@ class VisionState extends State<Vision>
   }
 
   Future<void> doOCR() async {
-    if (last != null && _isReady) {
+    if (_lastCameraImage != null &&
+        _isScanning &&
+        _controller.value.isInitialized) {
       setState(() {
-        _isReady = false;
+        _isScanning = false;
       });
-      //await HapticFeedback.heavyImpact();
-      if (_controller.value.isInitialized) {
-        await _controller.stopImageStream();
-        await _controller.dispose();
-      }
-      final String path = (await getTemporaryDirectory()).path +
-          "/capture${DateTime.now().millisecondsSinceEpoch}.png";
-      warpImage(cameraImageToBGRBytes(last!), current, path);
-      setState(() {
-        current = Quad.empty;
-        target = Quad.empty;
-        alpha = 0;
-      });
-      await Speech().speak("Document capturé");
-      await Navigator.push(
-          context, MaterialPageRoute(builder: (context) => Narrator(path)));
-      await _initCamera();
-    }
-  }
 
-  set mode(VisionMode mode) {
-    _mode = mode;
-    switch (_mode) {
-      case VisionMode.Document:
-        Speech().speak("Mode document");
-        break;
-      default:
-        break;
+      await HapticFeedback.heavyImpact();
+      await Speech().speak("Capture en cours, ne bougez plus votre appareil.");
+
+      // Stop preview stream and take a picture from camera.
+      await _stopImageStream();
+      XFile picture = await _controller.takePicture();
+      await _controller.setFlashMode(FlashMode.off);
+
+      await Speech().speak(
+          "Document capturé. En cours de traitement. La lecture démarrera dans quelques instants.");
+
+      // Save picture file somewhere on the phone.
+      String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      String rawFileName = "${timestamp}-rawPicture";
+      _rawPath = _imagesRootPath + "/${rawFileName}.png";
+      picture.saveTo(_rawPath!);
+
+      String warpedFileName = "${timestamp}-warpedPicture";
+      String _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
+      picture.saveTo(_warpedPath);
+
+      // Detect quad from taken picture.
+      Detection detectionFromPicture = await detectQuadFromShot(picture);
+      Quad quadFromPicture = Quad.from(detectionFromPicture);
+      if (quadFromPicture.isEmpty) {
+        // No quad found, then try again.
+        await Speech().speak(
+            "Oups, la détection du document à échouée. Veuillez réesayer de capture votre document.");
+
+        // Reset some stuff.
+        await _startImageStream();
+
+        setState(() {
+          _isScanning = true;
+          current = Quad.empty;
+          target = Quad.empty;
+          alpha = 0;
+        });
+      } else {
+        // Quad found, warped it for better text detection.
+        await warpShot(picture, quadFromPicture, _warpedPath);
+        // Go to narrator screen
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) {
+              return Narrator(_warpedPath);
+            },
+          ),
+        );
+      }
     }
   }
 
@@ -246,41 +319,44 @@ class VisionState extends State<Vision>
   void dispose() {
     _ticker.dispose();
     _controller.dispose();
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final deviceRatio = size.width / size.height;
-    final ratio = _isReady ? _controller.value.aspectRatio * deviceRatio : 1.0;
+    _size = MediaQuery.of(context).size;
+    _deviceRatio = _size.width / _size.height;
+    final ratio =
+        _isScanning ? _controller.value.aspectRatio * _deviceRatio : 1.0;
+
     final scale = 1 / ratio;
     return Center(
       child: Transform.scale(
         scale: scale,
         child: CustomPaint(
-          foregroundPainter:
-              QuadPainter(quad: current, draw: _isReady, alpha: alpha),
+          foregroundPainter: QuadPainter(
+            quad: current,
+            draw: _isScanning,
+            alpha: 100,
+          ),
           child: GestureDetector(
-            child: _isReady && _controller.value.isInitialized
+            child: _isScanning && _controller.value.isInitialized
                 ? CameraPreview(_controller)
-                : Container(color: Color(0xff000000)),
-            onTap: () async {
-              //await Navigator.push(
-              //    context, MaterialPageRoute(builder: (context) => Narrator("demo")));
-            },
-            onPanEnd: (details) {
-              if (details.velocity.pixelsPerSecond.dx.abs() >
-                  details.velocity.pixelsPerSecond.dy.abs()) {
-                if (details.velocity.pixelsPerSecond.dx > 0 ||
-                    details.velocity.pixelsPerSecond.dx < 0) {
-                  setState(() {
-                    // TODO switch mode
-                  });
-                }
-              }
-            },
+                : Center(
+                    child: Stack(
+                      children: [
+                        _rawPath != null
+                            ? Image.file(
+                                File(_rawPath!),
+                              )
+                            : Container(),
+                        CircularProgressIndicator(
+                          color: Colors.blue,
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ),
       ),

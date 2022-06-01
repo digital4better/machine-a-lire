@@ -75,8 +75,7 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
         }
     }
     if (quadArea > 0) {
-        //return create_detection(quad, width, height);
-        return create_detection(quad, width - width/4, height + height/4);
+        return create_detection(quad, width, height);
     }
     return nullptr;
 }
@@ -170,9 +169,9 @@ struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
     }
 
     cv::Mat original(height + height/2, width, CV_8UC1, buf);
-     double factor = 320.0 / width;
-     width *= factor;
-     height *= factor;
+    double factor = 320.0 / width;
+    width *= factor;
+    height *= factor;
     cv::resize(original, original, cv::Size(), factor, factor);
 
     cv::Mat gray, hsv;
@@ -202,8 +201,76 @@ struct Detection *detect_quad(uint8_t *buf, int32_t width, int32_t height) {
 }
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
+struct Detection *detect_quad_from_shot(char *path, int32_t width, int32_t height) {
+    if (width == 0 || height == 0) {
+        return &EMPTY;
+    }
+
+    cv::Mat original = cv::imread(path);
+
+    cv::Mat gray, hsv;
+    cv::Mat channels[3];
+
+    cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
+    prepare(gray);
+
+    Detection *d1 = detect_quad_by_contours(gray, width, height);
+    if (d1 != nullptr) return d1;
+
+    Detection *d2 = detect_quad_by_lines(gray, width, height);
+    if (d2 != nullptr) return d2;
+
+    cv::cvtColor(original, hsv, cv::COLOR_BGR2HSV);
+    cv::split(hsv, channels);
+    prepare(channels[1]);
+
+    Detection *d3 = detect_quad_by_contours(channels[1], width, height);
+    if (d3 != nullptr) return d3;
+
+    Detection *d4 = detect_quad_by_lines(channels[1], width, height);
+    if (d4 != nullptr) return d4;
+
+    return &EMPTY;
+}
+
+extern "C" __attribute__((visibility("default"))) __attribute__((used))
 void warp_image(uint8_t *buf, int32_t width, int32_t height, double tl_x, double tl_y, double tr_x, double tr_y, double br_x, double br_y, double bl_x, double bl_y, char *path) {
     cv::Mat original(height, width, CV_8UC3, buf);
+
+    cv::Mat warped, gray;
+    cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
+
+    int maxWidth = width * MAX(sqrt((br_x - bl_x) * (br_x - bl_x) + (br_y - bl_y) * (br_y - bl_y)),
+                       sqrt((tr_x - tl_x) * (tr_x - tl_x) + (tr_y - tl_y) * (tr_y - tl_y)));
+
+    int maxHeight = height * MAX(sqrt((tr_x - br_x) * (tr_x - br_x) + (tr_y - br_y) * (tr_y - br_y)),
+                        sqrt((tl_x - bl_x) * (tl_x - bl_x) + (tl_y - bl_y) * (tl_y - bl_y)));
+
+    std::vector<cv::Point2f> source;
+    source.push_back(cv::Point2f(tl_x * width, tl_y * height));
+    source.push_back(cv::Point2f(tr_x * width, tr_y * height));
+    source.push_back(cv::Point2f(br_x * width, br_y * height));
+    source.push_back(cv::Point2f(bl_x * width, bl_y * height));
+
+    std::vector<cv::Point2f> destination;
+    destination.push_back(cv::Point2f(0, 0));
+    destination.push_back(cv::Point2f(maxWidth - 1, 0));
+    destination.push_back(cv::Point2f(maxWidth - 1, maxHeight - 1));
+    destination.push_back(cv::Point2f(0, maxHeight - 1));
+
+    cv::Mat transform = cv::getPerspectiveTransform(source, destination);
+
+    cv::warpPerspective(gray, warped, transform, cv::Size(maxWidth, maxHeight), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+    cv::adaptiveThreshold(warped, warped, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 21, 10);
+
+    cv::imwrite(path, warped);
+
+    printf("Warped image ! %s", path);
+}
+
+extern "C" __attribute__((visibility("default"))) __attribute__((used))
+void warp_shot(int32_t width, int32_t height, double tl_x, double tl_y, double tr_x, double tr_y, double br_x, double br_y, double bl_x, double bl_y, char *path) {
+    cv::Mat original = cv::imread(path);
 
     cv::Mat warped, gray;
     cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);

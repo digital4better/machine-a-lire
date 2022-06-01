@@ -1,7 +1,7 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
 
@@ -42,13 +42,16 @@ class NarratorState extends State<Narrator> {
 
   Future<void> _parseText() async {
     await Speech().stop();
-    final text = await FlutterTesseractOcr.extractText(widget.path,
-        language: 'fra',
-        args: {
-          "psm": "6",
-          "preserve_interword_spaces": "1",
-        });
-    print("!!! TEXT !!! : $text");
+
+    final text = await FlutterTesseractOcr.extractText(
+      widget.path,
+      language: 'fra',
+      args: {
+        "psm": "6",
+        "preserve_interword_spaces": "1",
+      },
+    );
+
     setState(() {
       _text = text
           .replaceAllMapped(RegExp(r"\s*([,;.:?!])(?:\s*[,;.:?!])*\s*"),
@@ -59,6 +62,7 @@ class NarratorState extends State<Narrator> {
           .map((t) => Span(t))
           .toList();
     });
+
     await Speech()
         .speak("La lecture va commencer, appuyez pour l’arrêter.")
         .then((_) {
@@ -94,29 +98,33 @@ class NarratorState extends State<Narrator> {
       child: Container(
         color: Color.fromARGB(255, 0, 0, 0),
         child: SingleChildScrollView(
-          controller: _controller,
-          padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(
-              _text.length,
-              (i) => Padding(
-                key: _text[i].key,
-                padding: EdgeInsets.only(bottom: PADDING),
-                child: Text(
-                  _text[i].text,
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    fontWeight: FontWeight.w400,
-                    color:
-                        Color.fromARGB(_index == i ? 255 : 127, 255, 255, 255),
-                    decoration: TextDecoration.none,
+            controller: _controller,
+            padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
+            child: Stack(
+              children: [
+                Image.file(File(widget.path)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(
+                    _text.length,
+                    (i) => Padding(
+                      key: _text[i].key,
+                      padding: EdgeInsets.only(bottom: PADDING),
+                      child: Text(
+                        _text[i].text,
+                        style: TextStyle(
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w400,
+                          color: Color.fromARGB(
+                              _index == i ? 255 : 127, 255, 255, 255),
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-        ),
+              ],
+            )),
       ),
       onTap: () {
         setState(() {
