@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
-import 'package:malo/widgets/narrator.dart';
+import 'package:malo/widgets/analyse.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -65,8 +65,6 @@ class Vision extends StatefulWidget {
   VisionState createState() => VisionState();
 }
 
-enum VisionMode { Document }
-
 void _detectQuad(data) {
   SendPort? sendPort;
   final receivePort = ReceivePort();
@@ -91,12 +89,14 @@ class VisionState extends State<Vision>
   late CameraDescription _camera;
   late CameraController _controller;
   late Ticker _ticker;
-  late String _imagesRootPath;
   late Size _size;
   late double _deviceRatio;
-  String? _rawPath;
   bool _isScanning = false;
   bool _isDetecting = false;
+
+  late String _imagesRootPath;
+  String? _rawPath;
+  String? _warpedPath;
 
   final _receivePort = ReceivePort();
   SendPort? _isolatePort;
@@ -107,6 +107,10 @@ class VisionState extends State<Vision>
   Quad current = Quad.empty;
   int alpha = 0;
   int time = 0;
+
+  Future _initImagesPath() async {
+    _imagesRootPath = (await getExternalStorageDirectory())?.path ?? "";
+  }
 
   /// Makes sure that camera stream and torch is off if app is not running.
   @override
@@ -127,13 +131,8 @@ class VisionState extends State<Vision>
     _initCamera();
     _initDetection();
     _initAnimation();
-    _initImagesPath();
 
     WidgetsBinding.instance?.addObserver(this);
-  }
-
-  Future<void> _initImagesPath() async {
-    _imagesRootPath = (await getExternalStorageDirectory())?.path ?? "";
   }
 
   Future<void> _initAnimation() async {
@@ -169,16 +168,16 @@ class VisionState extends State<Vision>
         if (_isScanning) {
           // TODO add vocal instructions
           // TODO add movement detection for better capture
-          // area > 0.55
           if (alpha == 255) {
-            if (current.area > 0.55) {
-              doOCR();
+            num widthPercent = current.topRight.x - current.topLeft.x;
+            if (widthPercent > 0.6) {
+              takePictureForAnalyse();
             } else if (tock >
                 (maxTockSpeed - minTockSpeed) *
-                        ((0.55 - min(0.55, current.area)) / 0.55) +
+                        ((0.6 - min(0.6, widthPercent)) / 0.6) +
                     maxTockSpeed) {
               tock = 0;
-              //HapticFeedback.lightImpact();
+              HapticFeedback.lightImpact();
             }
           }
         }
@@ -214,9 +213,6 @@ class VisionState extends State<Vision>
   }
 
   Future _startImageStream() async {
-    Speech().speak(
-        "Scan de document prêt, présentez un document devant l’appareil.");
-
     await _controller.startImageStream((CameraImage image) async {
       if (_isDetecting || _isolatePort == null) return;
       _isDetecting = true;
@@ -224,6 +220,8 @@ class VisionState extends State<Vision>
       _lastCameraImage = image;
     });
     await _controller.setFlashMode(FlashMode.torch);
+    await Speech().speak(
+        "Scan de document prêt, présentez un document devant l’appareil.");
   }
 
   Future _stopImageStream() async {
@@ -253,7 +251,7 @@ class VisionState extends State<Vision>
     });
   }
 
-  Future<void> doOCR() async {
+  Future<void> takePictureForAnalyse() async {
     if (_lastCameraImage != null &&
         _isScanning &&
         _controller.value.isInitialized) {
@@ -269,49 +267,27 @@ class VisionState extends State<Vision>
       XFile picture = await _controller.takePicture();
       await _controller.setFlashMode(FlashMode.off);
 
-      await Speech().speak(
-          "Document capturé. En cours de traitement. La lecture démarrera dans quelques instants.");
+      await _initImagesPath();
 
-      // Save picture file somewhere on the phone.
+      // Save raw picture file somewhere on the phone.
       String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       String rawFileName = "${timestamp}-rawPicture";
       _rawPath = _imagesRootPath + "/${rawFileName}.png";
-      picture.saveTo(_rawPath!);
+      await picture.saveTo(_rawPath!);
 
+      // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
       String warpedFileName = "${timestamp}-warpedPicture";
-      String _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
-      picture.saveTo(_warpedPath);
+      _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
+      await picture.saveTo(_warpedPath!);
 
-      // Detect quad from taken picture.
-      Detection detectionFromPicture = await detectQuadFromShot(picture);
-      Quad quadFromPicture = Quad.from(detectionFromPicture);
-      if (quadFromPicture.isEmpty) {
-        // No quad found, then try again.
-        await Speech().speak(
-            "Oups, la détection du document à échouée. Veuillez réesayer de capture votre document.");
-
-        // Reset some stuff.
-        await _startImageStream();
-
-        setState(() {
-          _isScanning = true;
-          current = Quad.empty;
-          target = Quad.empty;
-          alpha = 0;
-        });
-      } else {
-        // Quad found, warped it for better text detection.
-        await warpShot(picture, quadFromPicture, _warpedPath);
-        // Go to narrator screen
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              return Narrator(_warpedPath);
-            },
-          ),
-        );
-      }
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return Analyse(_warpedPath!);
+          },
+        ),
+      );
     }
   }
 
@@ -341,22 +317,10 @@ class VisionState extends State<Vision>
             alpha: 100,
           ),
           child: GestureDetector(
+            onLongPress: takePictureForAnalyse,
             child: _isScanning && _controller.value.isInitialized
                 ? CameraPreview(_controller)
-                : Center(
-                    child: Stack(
-                      children: [
-                        _rawPath != null
-                            ? Image.file(
-                                File(_rawPath!),
-                              )
-                            : Container(),
-                        CircularProgressIndicator(
-                          color: Colors.blue,
-                        ),
-                      ],
-                    ),
-                  ),
+                : Container(),
           ),
         ),
       ),
