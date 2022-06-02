@@ -1,9 +1,10 @@
-import 'dart:io';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
+import 'package:malo/widgets/vision.dart';
 
 class Narrator extends StatefulWidget {
   Narrator(this.path);
@@ -30,8 +31,10 @@ class NarratorState extends State<Narrator> {
 
   @override
   void initState() {
+    _text = [Span("Analyse du text en cours...")];
+    // Delay a bit the parsing because it freezes screen animation.
+    Timer(Duration(milliseconds: 500), _parseText);
     super.initState();
-    _parseText();
   }
 
   @override
@@ -41,8 +44,6 @@ class NarratorState extends State<Narrator> {
   }
 
   Future<void> _parseText() async {
-    await Speech().stop();
-
     final text = await FlutterTesseractOcr.extractText(
       widget.path,
       language: 'fra',
@@ -63,76 +64,108 @@ class NarratorState extends State<Narrator> {
           .toList();
     });
 
-    await Speech()
-        .speak("La lecture va commencer, appuyez pour l’arrêter.")
-        .then((_) {
-      setState(() {
-        _index = 0;
-      });
+    await Speech().speak(
+        "La lecture va commencer. Appuyer sur l'écran pour passer un paragraphe. Appuyez deux fois pour arrêter la lecture.");
+
+    setState(() {
+      _index = 0;
+      _readSentences();
     });
+  }
+
+  Future _readSentences() async {
+    await Speech().stop();
+
     while (_index < _text.length) {
-      RenderBox? box =
-          _text[_index].key.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null) {
-        int delta = box.localToGlobal(Offset.zero).dy.toInt();
-        _controller.animateTo(
-          min(
-            _controller.offset + delta - PADDING,
-            _controller.position.maxScrollExtent,
-          ),
-          duration: Duration(milliseconds: 500),
-          curve: Curves.fastOutSlowIn,
-        );
-      }
-      await Speech().speak(_text[_index].text);
+      await _readSentenceByIndex(_index);
       setState(() {
         _index += 1;
       });
     }
-    await Speech().speak("Fin de la lecture.");
+
+    await Speech().speak("Fin de la lecture. Retour au scanner.");
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return Vision();
+        },
+      ),
+    );
+  }
+
+  Future _readSentenceByIndex(int index) async {
+    _scrollToSentence(index);
+    await Speech().speak(_text[index].text);
+  }
+
+  _scrollToSentence(int index) async {
+    RenderBox? box =
+        _text[index].key.currentContext?.findRenderObject() as RenderBox?;
+
+    if (box != null) {
+      int delta = box.localToGlobal(Offset.zero).dy.toInt();
+      _controller.animateTo(
+        min(
+          _controller.offset + delta - PADDING,
+          _controller.position.maxScrollExtent,
+        ),
+        duration: Duration(milliseconds: 500),
+        curve: Curves.fastOutSlowIn,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       child: Container(
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: Colors.black,
         child: SingleChildScrollView(
-            controller: _controller,
-            padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
-            child: Stack(
-              children: [
-                Image.file(File(widget.path)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(
-                    _text.length,
-                    (i) => Padding(
-                      key: _text[i].key,
-                      padding: EdgeInsets.only(bottom: PADDING),
-                      child: Text(
-                        _text[i].text,
-                        style: TextStyle(
-                          fontSize: 20.0,
-                          fontWeight: FontWeight.w400,
-                          color: Color.fromARGB(
-                              _index == i ? 255 : 127, 255, 255, 255),
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ),
+          controller: _controller,
+          padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(
+              _text.length,
+              (i) => Padding(
+                key: _text[i].key,
+                padding: EdgeInsets.only(bottom: PADDING),
+                child: Text(
+                  _text[i].text,
+                  style: TextStyle(
+                    fontSize: 20.0,
+                    fontWeight: _index == i ? FontWeight.w800 : FontWeight.w400,
+                    color: Colors.white,
+                    decoration: TextDecoration.none,
                   ),
                 ),
-              ],
-            )),
+              ),
+            ),
+          ),
+        ),
       ),
-      onTap: () {
+      onTap: () async {
+        setState(() {
+          _index += 1;
+          _readSentences();
+        });
+      },
+      onDoubleTap: () async {
         setState(() {
           _index = -1;
         });
-        Speech().stop();
-        Speech().speak("Lecture arrêtée");
-        Navigator.pop(context);
+        await Speech().stop();
+        await Speech().speak("Lecture arrêtée. Retour au scanner.");
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) {
+              return Vision();
+            },
+          ),
+        );
       },
     );
   }
