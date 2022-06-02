@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:malo/services/speech.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
+
+import 'package:language_tool/language_tool.dart' show LanguageTool;
+
 
 class Narrator extends StatefulWidget {
   Narrator(this.path);
@@ -14,7 +18,7 @@ class Narrator extends StatefulWidget {
 }
 
 class Span {
-  final String text;
+  String text;
   final GlobalKey key = GlobalKey();
 
   Span(this.text);
@@ -34,6 +38,34 @@ class NarratorState extends State<Narrator> {
     _parseText();
   }
 
+  Future<List<Span>> correctText(List<Span> correctedText) async {
+
+    var tool = LanguageTool(language: 'fr');
+
+    for (var sentence in correctedText) {
+      print(sentence.text);
+      sentence.text.replaceAll('é', 'e');
+      int diff = 0;
+      var result = await tool.check(sentence.text);
+      for (var mistake in result) {
+        print('diff : $diff');
+        String wordToCorrect = sentence.text.substring(mistake.offset! + diff, mistake.offset! + diff + mistake.length!);
+        print("word to correct is : ($wordToCorrect)");
+        if(mistake.replacements!.isNotEmpty){
+          print("correct word is : (${mistake.replacements!.first!})");
+          sentence.text = sentence.text.replaceAll(wordToCorrect, mistake.replacements!.first!);
+          diff += mistake.replacements!.first!.length - wordToCorrect.length;
+        } else {
+          sentence.text = sentence.text.replaceAll(wordToCorrect, '');
+          diff -= wordToCorrect.length;
+        }
+      }
+      print(sentence.text);
+    }
+
+    return correctedText;
+}
+
   Future<void> _parseText() async {
     await Speech().stop();
     final recognized = await textDetector.processImage(
@@ -51,6 +83,13 @@ class NarratorState extends State<Narrator> {
           .map((t) => Span(t))
           .toList();
     });
+
+    List<Span> correctedText = await correctText(_text);
+
+    setState(() {
+      _text = correctedText;
+    });
+
     await Speech().speak("La lecture va commencer, appuyez pour l’arrêter.").then((_) {
       setState(() {
         _index = 0;
