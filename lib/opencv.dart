@@ -56,24 +56,15 @@ final Pointer<Detection> Function(Pointer<Utf8> path, int width, int height)
         .asFunction();
 
 Detection detectQuad(CameraImage image) {
-  final size = image.planes
-      .map((plane) => plane.bytes.length)
-      .reduce((acc, length) => acc + length);
-
-  Pointer<Uint8> ptr = malloc.allocate(size);
-  Uint8List bytes = ptr.asTypedList(size);
-
-  int index = 0;
-
-  for (var plane in image.planes) {
-    bytes.setRange(index, index + plane.bytes.length, plane.bytes);
-    index += plane.bytes.length;
-  }
+  BGRImage bgr = cameraImageToBGRBytes(image, maxWidth: 320);
+  Pointer<Uint8> p = malloc.allocate(bgr.size);
+  p.asTypedList(bgr.size).setRange(0, bgr.size, bgr.bytes);
 
   try {
-    return detectQuadNative(ptr, image.width, image.height).ref;
-  } finally {
-    malloc.free(ptr);
+    return detectQuadNative(p, bgr.width, bgr.height).ref;
+  }
+  finally {
+    malloc.free(p);
   }
 }
 
