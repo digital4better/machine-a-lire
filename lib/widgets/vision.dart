@@ -9,6 +9,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
+import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -95,8 +96,6 @@ class VisionState extends State<Vision>
   bool _isDetecting = false;
 
   late String _imagesRootPath;
-  String? _rawPath;
-  String? _warpedPath;
 
   final _receivePort = ReceivePort();
   SendPort? _isolatePort;
@@ -109,7 +108,7 @@ class VisionState extends State<Vision>
   int time = 0;
 
   Future _initImagesPath() async {
-    _imagesRootPath = (await getExternalStorageDirectory())?.path ?? "";
+    _imagesRootPath = (await getTemporaryDirectory()).path;
   }
 
   /// Makes sure that camera stream and torch is off if app is not running.
@@ -189,6 +188,7 @@ class VisionState extends State<Vision>
   }
 
   Future<void> _initCamera() async {
+    await _initImagesPath();
     final cameras = await availableCameras();
 
     if (cameras.length > 0) {
@@ -200,7 +200,9 @@ class VisionState extends State<Vision>
         _camera,
         ResolutionPreset.ultraHigh,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.yuv420,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.yuv420
+            : ImageFormatGroup.bgra8888,
       );
       await _controller.initialize();
       await _controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
@@ -227,7 +229,9 @@ class VisionState extends State<Vision>
   Future _stopImageStream() async {
     alpha = 0;
 
-    await _controller.stopImageStream();
+    if (_controller.value.isStreamingImages) {
+      await _controller.stopImageStream();
+    }
     _isDetecting = false;
   }
 
@@ -251,6 +255,67 @@ class VisionState extends State<Vision>
     });
   }
 
+  Future<void> takePictureForAnalyseForIos() async {
+    await Speech()
+        .speak("Capture effectuée. Traitement en cours, veuillez patienter.");
+
+    // Stop preview stream and take a picture from camera.
+    await _stopImageStream();
+    await _controller.setFlashMode(FlashMode.off);
+
+    BGRImage picture = cameraImageToBGRBytes(_lastCameraImage!);
+
+    // Save warped file somewhere on the phone.
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    String warpedFileName = "${timestamp}-warpedPicture";
+    String _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
+    warpImage(picture, current, _warpedPath);
+
+    setState(() {
+      current = Quad.empty;
+      target = Quad.empty;
+      alpha = 0;
+    });
+
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return Narrator(_warpedPath);
+        },
+      ),
+    );
+  }
+
+  Future<void> takePictureForAnalyseForAndroid() async {
+    await Speech().speak("Capture en cours, ne bougez plus votre appareil.");
+
+    // Stop preview stream and take a picture from camera.
+    await _stopImageStream();
+    XFile picture = await _controller.takePicture();
+    await _controller.setFlashMode(FlashMode.off);
+
+    // Save raw picture file somewhere on the phone.
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    String rawFileName = "${timestamp}-rawPicture";
+    String _rawPath = _imagesRootPath + "/${rawFileName}.png";
+    await picture.saveTo(_rawPath);
+
+    // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
+    String warpedFileName = "${timestamp}-warpedPicture";
+    String _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
+    await picture.saveTo(_warpedPath);
+
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return Analyse(_warpedPath);
+        },
+      ),
+    );
+  }
+
   Future<void> takePictureForAnalyse() async {
     if (_lastCameraImage != null &&
         _isScanning &&
@@ -260,34 +325,12 @@ class VisionState extends State<Vision>
       });
 
       await HapticFeedback.heavyImpact();
-      await Speech().speak("Capture en cours, ne bougez plus votre appareil.");
 
-      // Stop preview stream and take a picture from camera.
-      await _stopImageStream();
-      XFile picture = await _controller.takePicture();
-      await _controller.setFlashMode(FlashMode.off);
-
-      await _initImagesPath();
-
-      // Save raw picture file somewhere on the phone.
-      String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      String rawFileName = "${timestamp}-rawPicture";
-      _rawPath = _imagesRootPath + "/${rawFileName}.png";
-      await picture.saveTo(_rawPath!);
-
-      // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
-      String warpedFileName = "${timestamp}-warpedPicture";
-      _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
-      await picture.saveTo(_warpedPath!);
-
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) {
-            return Analyse(_warpedPath!);
-          },
-        ),
-      );
+      if (Platform.isAndroid) {
+        takePictureForAnalyseForAndroid();
+      } else {
+        takePictureForAnalyseForIos();
+      }
     }
   }
 
