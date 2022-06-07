@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
+import 'package:malo/widgets/home.dart';
 
 import 'widgets/vision.dart';
 
@@ -25,5 +26,5 @@ class MyApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(home: Vision());
+  Widget build(BuildContext context) => MaterialApp(home: Home());
 }

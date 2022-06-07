@@ -9,6 +9,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
+import 'package:malo/widgets/history.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -94,7 +95,8 @@ class VisionState extends State<Vision>
   bool _isScanning = false;
   bool _isDetecting = false;
 
-  late String _imagesRootPath;
+  late String _imagesTempPath;
+  late String _imagesStoragePath;
   String? _rawPath;
   String? _warpedPath;
 
@@ -109,7 +111,8 @@ class VisionState extends State<Vision>
   int time = 0;
 
   Future _initImagesPath() async {
-    _imagesRootPath = (await getExternalStorageDirectory())?.path ?? "";
+    _imagesTempPath = (await getTemporaryDirectory()).path ?? "";
+    _imagesStoragePath = '${(await getTemporaryDirectory()).path}';
   }
 
   /// Makes sure that camera stream and torch is off if app is not running.
@@ -128,11 +131,16 @@ class VisionState extends State<Vision>
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    _initDetection();
-    _initAnimation();
 
-    WidgetsBinding.instance?.addObserver(this);
+    _initialisation();
+
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  Future<void> _initialisation() async {
+    await _initCamera();
+    await _initDetection();
+    await _initAnimation();
   }
 
   Future<void> _initAnimation() async {
@@ -169,8 +177,8 @@ class VisionState extends State<Vision>
           // TODO add vocal instructions
           // TODO add movement detection for better capture
           if (alpha == 255) {
-            num widthPercent = current.topRight.x - current.topLeft.x;
-            if (widthPercent > 0.6) {
+            num widthPercent = min(current.topRight.x - current.topLeft.x, current.bottomRight.x - current.bottomLeft.x);
+            if (widthPercent > 0.75) {
               takePictureForAnalyse();
             } else if (tock >
                 (maxTockSpeed - minTockSpeed) *
@@ -220,8 +228,7 @@ class VisionState extends State<Vision>
       _lastCameraImage = image;
     });
     await _controller.setFlashMode(FlashMode.torch);
-    await Speech().speak(
-        "Scan de document prêt, présentez un document devant l’appareil.");
+    await Speech().speak("Scan de document prêt, présentez un document devant l’appareil.");
   }
 
   Future _stopImageStream() async {
@@ -272,41 +279,57 @@ class VisionState extends State<Vision>
       // Save raw picture file somewhere on the phone.
       String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       String rawFileName = "${timestamp}-rawPicture";
-      _rawPath = _imagesRootPath + "/${rawFileName}.png";
+      _rawPath = _imagesTempPath + "/${rawFileName}.png";
       await picture.saveTo(_rawPath!);
 
       // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
       String warpedFileName = "${timestamp}-warpedPicture";
-      _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
-      await picture.saveTo(_warpedPath!);
+      _warpedPath = "/${warpedFileName}.png";
+      await picture.saveTo('$_imagesStoragePath/${_warpedPath!}');
 
       await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return History();
+          },
+        ),
+      );
+
+      /*await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) {
             return Analyse(_warpedPath!);
           },
         ),
-      );
+      );*/
     }
+  }
+
+  void goToHistory() {
+
   }
 
   @override
   void dispose() {
     _ticker.dispose();
     _controller.dispose();
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
     _size = MediaQuery.of(context).size;
     _deviceRatio = _size.width / _size.height;
     final ratio =
         _isScanning ? _controller.value.aspectRatio * _deviceRatio : 1.0;
 
     final scale = 1 / ratio;
+
+    //print("IS SCANNING : $_isScanning  CONTROLLER INIT : ${_controller.value.isInitialized}");
     return Center(
       child: Transform.scale(
         scale: scale,
@@ -318,6 +341,7 @@ class VisionState extends State<Vision>
           ),
           child: GestureDetector(
             onLongPress: takePictureForAnalyse,
+            onDoubleTap: goToHistory,
             child: _isScanning && _controller.value.isInitialized
                 ? CameraPreview(_controller)
                 : Container(),
