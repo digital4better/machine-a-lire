@@ -9,8 +9,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
-import 'package:malo/widgets/narrator.dart';
 import 'package:malo/widgets/home.dart';
+import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -100,6 +100,7 @@ class VisionState extends State<Vision>
   late double _deviceRatio;
   bool _isScanning = false;
   bool _isDetecting = false;
+  Timer? _hapticTimer;
 
   late String _imagesRootPath;
 
@@ -130,6 +131,46 @@ class VisionState extends State<Vision>
     }
   }
 
+  /// Defines duration between two vibration.
+  /// The largest the detected sheet is, the less time there is between two vibrations.
+  Duration? timeBetweenTwoVibrations() {
+    double widthPercent = min(current.topRight.x - current.topLeft.x,
+            current.bottomRight.x - current.bottomLeft.x)
+        .toDouble();
+
+    if (widthPercent <= 0) {
+      return null;
+    }
+
+    return Duration(
+        milliseconds: widthPercent < 0.25
+            ? 500
+            : widthPercent < 0.5
+                ? 300
+                : widthPercent < 0.6
+                    ? 200
+                    : 100);
+  }
+
+  /// When user is close to frame correctly the document, haptics feedbacks starts.
+  /// The more it vibrates, the better the frame is.
+  Future startHapticFeedback() async {
+    if (_hapticTimer == null || !_hapticTimer!.isActive) {
+      Duration? duration = timeBetweenTwoVibrations();
+      if (duration.runtimeType == Duration) {
+        await HapticFeedback.selectionClick();
+        _hapticTimer = Timer(duration!, () {});
+      }
+    }
+  }
+
+  /// Stops haptics feedbacks.
+  void stopHapticFeedback() {
+    if (_hapticTimer != null && _hapticTimer!.isActive) {
+      _hapticTimer!.cancel();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +195,8 @@ class VisionState extends State<Vision>
       final int maxTockSpeed = 3;
 
       if (target.isEmpty) {
+        stopHapticFeedback();
+
         setState(() {
           alpha = max(alpha - alphaSpeed, 0);
           if (alpha == 0) {
@@ -161,6 +204,8 @@ class VisionState extends State<Vision>
           }
         });
       } else {
+        startHapticFeedback();
+
         setState(() {
           alpha = min(alpha + alphaSpeed, 255);
           if (current.isEmpty) {
@@ -188,7 +233,6 @@ class VisionState extends State<Vision>
                         ((0.6 - min(0.6, widthPercent)) / 0.6) +
                     maxTockSpeed) {
               tock = 0;
-              HapticFeedback.lightImpact();
             }
           }
         }
@@ -335,8 +379,7 @@ class VisionState extends State<Vision>
       setState(() {
         _isScanning = false;
       });
-
-      await HapticFeedback.heavyImpact();
+      stopHapticFeedback();
 
       if (Platform.isAndroid) {
         takePictureForAnalyseForAndroid();
