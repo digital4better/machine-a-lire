@@ -291,19 +291,10 @@ class VisionState extends State<Vision>
         context,
         MaterialPageRoute(
           builder: (context) {
-            return History();
-          },
-        ),
-      );
-
-      /*await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) {
             return Analyse(_warpedPath!);
           },
         ),
-      );*/
+      );
     }
   }
 
