@@ -111,8 +111,8 @@ class VisionState extends State<Vision>
   int time = 0;
 
   Future _initImagesPath() async {
-    _imagesTempPath = (await getTemporaryDirectory()).path ?? "";
-    _imagesStoragePath = '${(await getTemporaryDirectory()).path}';
+    _imagesTempPath = (await getTemporaryDirectory()).path;
+    _imagesStoragePath = (await getTemporaryDirectory()).path;
   }
 
   /// Makes sure that camera stream and torch is off if app is not running.

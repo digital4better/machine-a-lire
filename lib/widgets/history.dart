@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:malo/components/button.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'analyse.dart';
-
+import 'home.dart';
 
 class History extends StatefulWidget {
   const History({Key? key}) : super(key: key);
@@ -25,9 +25,10 @@ class _HistoryState extends State<History> {
   }
 
   void _getFilesList() async {
-    String imagesStoragePath = (await getApplicationDocumentsDirectory()).path;
-    setState(() {
-      filesList = Directory('$imagesStoragePath/scans').listSync();
+    Directory('${(await getApplicationDocumentsDirectory()).path}/scans').create().then((Directory dir) {
+      setState(() {
+        filesList = dir.listSync();
+      });
     });
   }
 
@@ -44,23 +45,54 @@ class _HistoryState extends State<History> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        color: Colors.black,
-        child: ListView.separated(
-          itemBuilder: (BuildContext context, int index) {
-            return TextButton(
-                onPressed: () {startReading(index);},
-                child: Text(
-                    filesList[index].path,
-                    style: TextStyle(color: Colors.white),
-                )
-            );
-          },
-          separatorBuilder: (BuildContext context, int index) {
-            return SizedBox(height: 5,);
-          },
-          itemCount: filesList.length)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            "Historique des scans",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 20,
+                color: Colors.white,
+                decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+        Button(
+            buttonText: "Retourner au menu",
+            buttonOnPressed: () async {
+              await Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return Home();
+                  },
+                ),
+              );
+            },
+        ),
+        Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            color: Colors.black,
+            child: ListView.separated(
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              itemBuilder: (BuildContext context, int index) {
+                return Button(
+                    buttonText: filesList[index].path,
+                    buttonOnPressed: () {startReading(index);},
+                );
+              },
+              separatorBuilder: (BuildContext context, int index) {
+                return SizedBox(height: 5,);
+              },
+              itemCount: filesList.length)
+        ),
+      ],
     );
   }
 }
