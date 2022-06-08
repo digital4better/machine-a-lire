@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/home.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:malo/widgets/saveScan.dart';
 
 class Narrator extends StatefulWidget {
   Narrator(this.path, {this.isTextExtracted = false});
@@ -29,6 +29,7 @@ const double PADDING = 30;
 
 class NarratorState extends State<Narrator> {
   final _controller = ScrollController();
+  late String textToSave;
   List<Span> _text = [];
   int _index = -1;
 
@@ -48,14 +49,6 @@ class NarratorState extends State<Narrator> {
   void dispose() {
     Speech().stop();
     super.dispose();
-  }
-
-  void saveText(String text) async {
-    Directory('${(await getApplicationDocumentsDirectory()).path}/scans')
-        .create()
-        .then((Directory dir) => File(
-                '${dir.path}/${DateTime.now().millisecondsSinceEpoch.toString()}.txt')
-            .writeAsString(text));
   }
 
   Future<void> _readTextFile() async {
@@ -89,7 +82,9 @@ class NarratorState extends State<Narrator> {
           .toList();
     });
 
-    saveText(text);
+    setState(() {
+      textToSave = text;
+    });
 
     await Speech().speak(
         "La lecture va commencer. Appuyer sur l'écran pour passer un paragraphe. Appuyez deux fois pour arrêter la lecture.");
@@ -110,12 +105,12 @@ class NarratorState extends State<Narrator> {
       });
     }
 
-    await Speech().speak("Fin de la lecture. Retour au menu.");
+    await Speech().speak(widget.isTextExtracted ? "Fin de la lecture. Retour au menu principal" : "Fin de la lecture. Veuillez entrer le nom du document scanné .");
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) {
-          return Home();
+          return widget.isTextExtracted ? Home() : SaveScan(text: textToSave,);
         },
       ),
     );

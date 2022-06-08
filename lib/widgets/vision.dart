@@ -264,7 +264,7 @@ class VisionState extends State<Vision>
   }
 
   Future<void> takePictureForAnalyseForIos() async {
-    await Speech()
+    Speech()
         .speak("Capture effectuée. Traitement en cours, veuillez patienter.");
 
     // Stop preview stream and take a picture from camera.
@@ -296,7 +296,7 @@ class VisionState extends State<Vision>
   }
 
   Future<void> takePictureForAnalyseForAndroid() async {
-    await Speech().speak("Capture en cours, ne bougez plus votre appareil.");
+    Speech().speak("Capture en cours, ne bougez plus votre appareil.");
 
     // Stop preview stream and take a picture from camera.
     await _stopImageStream();

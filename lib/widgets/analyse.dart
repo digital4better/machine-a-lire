@@ -19,7 +19,7 @@ class Analyse extends StatefulWidget {
 class AnalyseState extends State<Analyse> {
 
   Future _init() async {
-    await Speech()
+    Speech()
         .speak("Document capturé. En cours de traitement. Patientez.");
 
     // Then start analyse.
@@ -38,7 +38,7 @@ class AnalyseState extends State<Analyse> {
 
     if (quadFromPicture.isEmpty) {
       // No quad found, then try again.
-      await Speech().speak(
+      Speech().speak(
           "Oups, la détection du document à échouée. Veuillez réesayer de capture votre document.");
 
       Navigator.pushReplacement(
@@ -50,7 +50,7 @@ class AnalyseState extends State<Analyse> {
         ),
       );
     } else {
-      await Speech().speak(
+      Speech().speak(
           "Détection du document réussie. Patientez encore un peu, le texte est en cours d'analyse.");
 
       // Quad found, warped it for better text detection.

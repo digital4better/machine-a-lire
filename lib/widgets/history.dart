@@ -83,7 +83,6 @@ class _HistoryState extends State<History> {
             padding: const EdgeInsets.symmetric(vertical: 10),
             color: Colors.black,
             child: ListView.separated(
-                scrollDirection: Axis.vertical,
                 shrinkWrap: true,
                 itemBuilder: (BuildContext context, int index) {
                   String filePath = filesList[index].path;
