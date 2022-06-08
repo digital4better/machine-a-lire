@@ -82,8 +82,9 @@ class _HistoryState extends State<History> {
               scrollDirection: Axis.vertical,
               shrinkWrap: true,
               itemBuilder: (BuildContext context, int index) {
+                String filePath = filesList[index].path;
                 return Button(
-                    buttonText: filesList[index].path,
+                    buttonText: filePath.substring(filePath.indexOf('scans/')+6, filePath.length - 4),
                     buttonOnPressed: () {startReading(index);},
                 );
               },

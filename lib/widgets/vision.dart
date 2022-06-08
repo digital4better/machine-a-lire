@@ -9,9 +9,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
-import 'package:malo/widgets/history.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
+
+import 'home.dart';
 
 class QuadPainter extends CustomPainter {
   QuadPainter({this.quad, required this.draw, required this.alpha});
@@ -228,7 +229,7 @@ class VisionState extends State<Vision>
       _lastCameraImage = image;
     });
     await _controller.setFlashMode(FlashMode.torch);
-    await Speech().speak("Scan de document prêt, présentez un document devant l’appareil.");
+    Speech().speak("Scan de document prêt, présentez un document devant l’appareil.");
   }
 
   Future _stopImageStream() async {
@@ -248,6 +249,7 @@ class VisionState extends State<Vision>
 
     _receivePort.listen((data) {
       if (data is SendPort) {
+        _isolatePort = data;
         _isolatePort = data;
       } else if (data is Quad) {
         setState(() {
@@ -298,8 +300,16 @@ class VisionState extends State<Vision>
     }
   }
 
-  void goToHistory() {
-
+  void goToMainMenu() async {
+    Speech().speak("Retour au menu principal");
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return Home();
+        },
+      ),
+    );
   }
 
   @override
@@ -320,7 +330,6 @@ class VisionState extends State<Vision>
 
     final scale = 1 / ratio;
 
-    //print("IS SCANNING : $_isScanning  CONTROLLER INIT : ${_controller.value.isInitialized}");
     return Center(
       child: Transform.scale(
         scale: scale,
@@ -332,7 +341,7 @@ class VisionState extends State<Vision>
           ),
           child: GestureDetector(
             onLongPress: takePictureForAnalyse,
-            onDoubleTap: goToHistory,
+            onDoubleTap: goToMainMenu,
             child: _isScanning && _controller.value.isInitialized
                 ? CameraPreview(_controller)
                 : Container(),

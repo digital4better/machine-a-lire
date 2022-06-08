@@ -8,6 +8,8 @@ import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/vision.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'home.dart';
+
 class Narrator extends StatefulWidget {
   Narrator(this.path, {this.isTextExtracted = false});
 
@@ -115,12 +117,12 @@ class NarratorState extends State<Narrator> {
       });
     }
 
-    await Speech().speak("Fin de la lecture. Retour au scanner.");
+    await Speech().speak("Fin de la lecture. Retour au menu.");
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) {
-          return Vision();
+          return Home();
         },
       ),
     );
@@ -188,13 +190,13 @@ class NarratorState extends State<Narrator> {
           _index = -1;
         });
         await Speech().stop();
-        await Speech().speak("Lecture arrêtée. Retour au scanner.");
+        Speech().speak("Lecture arrêtée. Retour au menu.");
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) {
-              return Vision();
+              return Home();
             },
           ),
         );
