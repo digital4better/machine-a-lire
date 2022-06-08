@@ -28,7 +28,6 @@ class Span {
 const double PADDING = 30;
 
 class NarratorState extends State<Narrator> {
-  late String imagePath;
   final _controller = ScrollController();
   List<Span> _text = [];
   int _index = -1;
@@ -51,13 +50,6 @@ class NarratorState extends State<Narrator> {
     super.dispose();
   }
 
-  Future<void> _getFullPath() async {
-    String path = '${(await getTemporaryDirectory()).path}/${widget.path}';
-    setState(() {
-      imagePath = path;
-    });
-  }
-
   void saveText(String text) async {
     Directory('${(await getApplicationDocumentsDirectory()).path}/scans')
         .create()
@@ -77,9 +69,8 @@ class NarratorState extends State<Narrator> {
   }
 
   Future<void> _parseText() async {
-    await _getFullPath();
     final text = await FlutterTesseractOcr.extractText(
-      imagePath,
+      widget.path,
       language: 'fra',
       args: {
         "psm": "6",

@@ -6,7 +6,6 @@ import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:malo/widgets/vision.dart';
 import 'package:native_opencv/native_opencv.dart';
-import 'package:path_provider/path_provider.dart';
 
 class Analyse extends StatefulWidget {
   Analyse(this.imagePath);
@@ -18,9 +17,6 @@ class Analyse extends StatefulWidget {
 }
 
 class AnalyseState extends State<Analyse> {
-  Future<String> _getFullPath() async {
-    return '${(await getTemporaryDirectory()).path}/${widget.imagePath}';
-  }
 
   Future _init() async {
     await Speech()
@@ -31,9 +27,8 @@ class AnalyseState extends State<Analyse> {
   }
 
   Future _analysePicture() async {
-    String fullPath = await _getFullPath();
 
-    XFile picture = XFile(fullPath);
+    XFile picture = XFile(widget.imagePath);
 
     // Detect quad from taken picture.
     Detection detectionFromPicture = await detectQuadFromShot(picture);
@@ -59,7 +54,7 @@ class AnalyseState extends State<Analyse> {
           "Détection du document réussie. Patientez encore un peu, le texte est en cours d'analyse.");
 
       // Quad found, warped it for better text detection.
-      await warpShot(picture, quadFromPicture, fullPath);
+      await warpShot(picture, quadFromPicture, widget.imagePath);
 
       // Go to narrator screen
       await Navigator.pushReplacement(
