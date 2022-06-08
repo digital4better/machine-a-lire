@@ -13,24 +13,26 @@ class Home extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset('assets/images/app_splash.png'),
-        SizedBox(height: 40,),
+        SizedBox(
+          height: 40,
+        ),
         Button(
-            buttonText: "Effectuer un nouveau scan",
-            buttonOnPressed: () async {
-              await Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return Vision();
-                  },
-                ),
-              );
-            },
+          buttonText: "Effectuer un nouveau scan",
+          buttonOnPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) {
+                  return Vision();
+                },
+              ),
+            );
+          },
         ),
         Button(
           buttonText: "Consulter l'historique des scans",
           buttonOnPressed: () async {
-            await Navigator.pushReplacement(
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) {

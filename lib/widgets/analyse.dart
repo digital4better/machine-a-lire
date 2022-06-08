@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -19,14 +18,8 @@ class Analyse extends StatefulWidget {
 }
 
 class AnalyseState extends State<Analyse> {
-
-  late String fullPath;
-
-  Future<void> _getFullPath() async {
-    String Path = '${(await getTemporaryDirectory()).path}/${widget.imagePath}';
-    setState((){
-      fullPath = Path;
-    });
+  Future<String> _getFullPath() async {
+    return '${(await getTemporaryDirectory()).path}/${widget.imagePath}';
   }
 
   Future _init() async {
@@ -38,7 +31,7 @@ class AnalyseState extends State<Analyse> {
   }
 
   Future _analysePicture() async {
-    await _getFullPath();
+    String fullPath = await _getFullPath();
 
     XFile picture = XFile(fullPath);
 
@@ -67,8 +60,6 @@ class AnalyseState extends State<Analyse> {
 
       // Quad found, warped it for better text detection.
       await warpShot(picture, quadFromPicture, fullPath);
-      print(fullPath);
-      setState(() {});
 
       // Go to narrator screen
       await Navigator.pushReplacement(
@@ -98,7 +89,6 @@ class AnalyseState extends State<Analyse> {
             Stack(
               fit: StackFit.expand,
               children: [
-                //Image.file(File(fullPath)),
                 Center(child: CircularProgressIndicator(color: Colors.blue)),
               ],
             ),

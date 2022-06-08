@@ -96,10 +96,7 @@ class VisionState extends State<Vision>
   bool _isScanning = false;
   bool _isDetecting = false;
 
-  late String _imagesTempPath;
-  late String _imagesStoragePath;
-  String? _rawPath;
-  String? _warpedPath;
+  late String _imagesRootPath;
 
   final _receivePort = ReceivePort();
   SendPort? _isolatePort;
@@ -112,8 +109,7 @@ class VisionState extends State<Vision>
   int time = 0;
 
   Future _initImagesPath() async {
-    _imagesTempPath = (await getTemporaryDirectory()).path;
-    _imagesStoragePath = (await getTemporaryDirectory()).path;
+    _imagesRootPath = (await getTemporaryDirectory()).path;
   }
 
   /// Makes sure that camera stream and torch is off if app is not running.
@@ -135,7 +131,7 @@ class VisionState extends State<Vision>
 
     _initialisation();
 
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
   }
 
   Future<void> _initialisation() async {
@@ -178,7 +174,8 @@ class VisionState extends State<Vision>
           // TODO add vocal instructions
           // TODO add movement detection for better capture
           if (alpha == 255) {
-            num widthPercent = min(current.topRight.x - current.topLeft.x, current.bottomRight.x - current.bottomLeft.x);
+            num widthPercent = min(current.topRight.x - current.topLeft.x,
+                current.bottomRight.x - current.bottomLeft.x);
             if (widthPercent > 0.75) {
               takePictureForAnalyse();
             } else if (tock >
@@ -229,7 +226,8 @@ class VisionState extends State<Vision>
       _lastCameraImage = image;
     });
     await _controller.setFlashMode(FlashMode.torch);
-    Speech().speak("Scan de document prêt, présentez un document devant l’appareil.");
+    Speech().speak(
+        "Scan de document prêt, présentez un document devant l’appareil.");
   }
 
   Future _stopImageStream() async {
@@ -280,20 +278,19 @@ class VisionState extends State<Vision>
 
       // Save raw picture file somewhere on the phone.
       String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      String rawFileName = "${timestamp}-rawPicture";
-      _rawPath = _imagesTempPath + "/${rawFileName}.png";
-      await picture.saveTo(_rawPath!);
+      String rawFileName = "${timestamp}-rawPicture.png";
+      await picture.saveTo('$_imagesRootPath/$rawFileName');
 
       // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
-      String warpedFileName = "${timestamp}-warpedPicture";
-      _warpedPath = "/${warpedFileName}.png";
-      await picture.saveTo('$_imagesStoragePath/${_warpedPath!}');
+      String warpedFileName = "${timestamp}-warpedPicture.png";
+      String warpedPath = _imagesRootPath + "/$warpedFileName";
+      await picture.saveTo(warpedPath);
 
       await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) {
-            return Analyse(_warpedPath!);
+            return Analyse(warpedFileName);
           },
         ),
       );
@@ -316,13 +313,12 @@ class VisionState extends State<Vision>
   void dispose() {
     _ticker.dispose();
     _controller.dispose();
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-
     _size = MediaQuery.of(context).size;
     _deviceRatio = _size.width / _size.height;
     final ratio =

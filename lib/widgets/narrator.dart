@@ -1,11 +1,9 @@
-import 'dart:math';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
-import 'package:malo/widgets/vision.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'home.dart';
@@ -38,11 +36,12 @@ class NarratorState extends State<Narrator> {
   @override
   void initState() {
     _text = [Span("Analyse du text en cours...")];
-    if(widget.isTextExtracted){
+    if (widget.isTextExtracted) {
       _readTextFile();
-    } else{
+    } else {
       _parseText();
-    };
+    }
+
     super.initState();
   }
 
@@ -54,20 +53,23 @@ class NarratorState extends State<Narrator> {
 
   Future<void> _getFullPath() async {
     String Path = '${(await getTemporaryDirectory()).path}/${widget.path}';
-    setState((){
+    setState(() {
       imagePath = Path;
     });
   }
 
   void saveText(String text) async {
-    Directory('${(await getApplicationDocumentsDirectory()).path}/scans').create()
-      .then((Directory dir) => File('${dir.path}/${DateTime.now().millisecondsSinceEpoch.toString()}.txt').writeAsString(text));
+    Directory('${(await getApplicationDocumentsDirectory()).path}/scans')
+        .create()
+        .then((Directory dir) => File(
+                '${dir.path}/${DateTime.now().millisecondsSinceEpoch.toString()}.txt')
+            .writeAsString(text));
   }
 
   Future<void> _readTextFile() async {
     String rawText = await File(widget.path).readAsString();
     List<Span> text = [Span(rawText)];
-      setState(() {
+    setState(() {
       _text = text;
       _index = 0;
       _readSentences();
