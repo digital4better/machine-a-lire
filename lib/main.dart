@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
-
-import 'widgets/vision.dart';
+import 'package:malo/widgets/home.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,5 +16,5 @@ class MyApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(home: Vision());
+  Widget build(BuildContext context) => MaterialApp(home: Home());
 }

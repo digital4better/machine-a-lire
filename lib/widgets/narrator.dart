@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
-import 'package:malo/widgets/vision.dart';
+import 'package:malo/widgets/home.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Narrator extends StatefulWidget {
-  Narrator(this.path);
+  Narrator(this.path, {this.isTextExtracted = false});
 
   final String path;
+  final bool isTextExtracted;
 
   @override
   NarratorState createState() => NarratorState();
@@ -25,6 +28,7 @@ class Span {
 const double PADDING = 30;
 
 class NarratorState extends State<Narrator> {
+  late String imagePath;
   final _controller = ScrollController();
   List<Span> _text = [];
   int _index = -1;
@@ -32,8 +36,12 @@ class NarratorState extends State<Narrator> {
   @override
   void initState() {
     _text = [Span("Analyse du text en cours...")];
-    // Delay a bit the parsing because it freezes screen animation.
-    Timer(Duration(milliseconds: 500), _parseText);
+    if (widget.isTextExtracted) {
+      _readTextFile();
+    } else {
+      _parseText();
+    }
+
     super.initState();
   }
 
@@ -43,9 +51,35 @@ class NarratorState extends State<Narrator> {
     super.dispose();
   }
 
+  Future<void> _getFullPath() async {
+    String path = '${(await getTemporaryDirectory()).path}/${widget.path}';
+    setState(() {
+      imagePath = path;
+    });
+  }
+
+  void saveText(String text) async {
+    Directory('${(await getApplicationDocumentsDirectory()).path}/scans')
+        .create()
+        .then((Directory dir) => File(
+                '${dir.path}/${DateTime.now().millisecondsSinceEpoch.toString()}.txt')
+            .writeAsString(text));
+  }
+
+  Future<void> _readTextFile() async {
+    String rawText = await File(widget.path).readAsString();
+    List<Span> text = [Span(rawText)];
+    setState(() {
+      _text = text;
+      _index = 0;
+      _readSentences();
+    });
+  }
+
   Future<void> _parseText() async {
+    await _getFullPath();
     final text = await FlutterTesseractOcr.extractText(
-      widget.path,
+      imagePath,
       language: 'fra',
       args: {
         "psm": "6",
@@ -63,6 +97,8 @@ class NarratorState extends State<Narrator> {
           .map((t) => Span(t))
           .toList();
     });
+
+    saveText(text);
 
     await Speech().speak(
         "La lecture va commencer. Appuyer sur l'écran pour passer un paragraphe. Appuyez deux fois pour arrêter la lecture.");
@@ -83,12 +119,12 @@ class NarratorState extends State<Narrator> {
       });
     }
 
-    await Speech().speak("Fin de la lecture. Retour au scanner.");
+    await Speech().speak("Fin de la lecture. Retour au menu.");
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) {
-          return Vision();
+          return Home();
         },
       ),
     );
@@ -156,13 +192,13 @@ class NarratorState extends State<Narrator> {
           _index = -1;
         });
         await Speech().stop();
-        await Speech().speak("Lecture arrêtée. Retour au scanner.");
+        Speech().speak("Lecture arrêtée. Retour au menu.");
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) {
-              return Vision();
+              return Home();
             },
           ),
         );

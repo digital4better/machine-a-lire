@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
 import 'package:malo/widgets/narrator.dart';
+import 'package:malo/widgets/home.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -127,11 +128,16 @@ class VisionState extends State<Vision>
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    _initDetection();
-    _initAnimation();
+
+    _initialisation();
 
     WidgetsBinding.instance?.addObserver(this);
+  }
+
+  Future<void> _initialisation() async {
+    await _initCamera();
+    await _initDetection();
+    await _initAnimation();
   }
 
   Future<void> _initAnimation() async {
@@ -168,8 +174,9 @@ class VisionState extends State<Vision>
           // TODO add vocal instructions
           // TODO add movement detection for better capture
           if (alpha == 255) {
-            num widthPercent = current.topRight.x - current.topLeft.x;
-            if (widthPercent > 0.6) {
+            num widthPercent = min(current.topRight.x - current.topLeft.x,
+                current.bottomRight.x - current.bottomLeft.x);
+            if (widthPercent > 0.75) {
               takePictureForAnalyse();
             } else if (tock >
                 (maxTockSpeed - minTockSpeed) *
@@ -222,7 +229,7 @@ class VisionState extends State<Vision>
       _lastCameraImage = image;
     });
     await _controller.setFlashMode(FlashMode.torch);
-    await Speech().speak(
+    Speech().speak(
         "Scan de document prêt, présentez un document devant l’appareil.");
   }
 
@@ -246,6 +253,7 @@ class VisionState extends State<Vision>
     _receivePort.listen((data) {
       if (data is SendPort) {
         _isolatePort = data;
+        _isolatePort = data;
       } else if (data is Quad) {
         setState(() {
           _isDetecting = false;
@@ -267,9 +275,9 @@ class VisionState extends State<Vision>
 
     // Save warped file somewhere on the phone.
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    String warpedFileName = "${timestamp}-warpedPicture";
-    String _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
-    warpImage(picture, current, _warpedPath);
+    String warpedFileName = "${timestamp}-warpedPicture.png";
+    String warpedPath = _imagesRootPath + "/$warpedFileName";
+    warpImage(picture, current, warpedPath);
 
     setState(() {
       current = Quad.empty;
@@ -281,7 +289,7 @@ class VisionState extends State<Vision>
       context,
       MaterialPageRoute(
         builder: (context) {
-          return Narrator(_warpedPath);
+          return Narrator(warpedFileName);
         },
       ),
     );
@@ -297,20 +305,19 @@ class VisionState extends State<Vision>
 
     // Save raw picture file somewhere on the phone.
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    String rawFileName = "${timestamp}-rawPicture";
-    String _rawPath = _imagesRootPath + "/${rawFileName}.png";
-    await picture.saveTo(_rawPath);
+    String rawFileName = "${timestamp}-rawPicture.png";
+    await picture.saveTo('$_imagesRootPath/$rawFileName');
 
     // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
-    String warpedFileName = "${timestamp}-warpedPicture";
-    String _warpedPath = _imagesRootPath + "/${warpedFileName}.png";
-    await picture.saveTo(_warpedPath);
+    String warpedFileName = "${timestamp}-warpedPicture.png";
+    String warpedPath = _imagesRootPath + "/$warpedFileName";
+    await picture.saveTo(warpedPath);
 
     await Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) {
-          return Analyse(_warpedPath);
+          return Analyse(warpedFileName);
         },
       ),
     );
@@ -334,6 +341,18 @@ class VisionState extends State<Vision>
     }
   }
 
+  void goToMainMenu() async {
+    Speech().speak("Retour au menu principal");
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return Home();
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _ticker.dispose();
@@ -350,6 +369,7 @@ class VisionState extends State<Vision>
         _isScanning ? _controller.value.aspectRatio * _deviceRatio : 1.0;
 
     final scale = 1 / ratio;
+
     return Center(
       child: Transform.scale(
         scale: scale,
@@ -361,6 +381,7 @@ class VisionState extends State<Vision>
           ),
           child: GestureDetector(
             onLongPress: takePictureForAnalyse,
+            onDoubleTap: goToMainMenu,
             child: _isScanning && _controller.value.isInitialized
                 ? CameraPreview(_controller)
                 : Container(),

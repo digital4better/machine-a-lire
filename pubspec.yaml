@@ -41,7 +41,6 @@ flutter_icons:
   image_path: "assets/images/app_icon.png"
 
 flutter:
-
   uses-material-design: false
 
 #    - assets/
@@ -49,6 +48,7 @@ flutter:
   assets:
     - assets/
     - assets/tessdata/
+    - assets/images/
 #    - assets/tessdata/fra.traineddata
 #    - assets/tessdata_config.json
 
