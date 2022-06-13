@@ -93,6 +93,7 @@ class _HistoryState extends State<History> {
               ),
             ),
             Button(
+              textSize: 30,
               innerPadding: true,
               buttonText: "Retourner au menu",
               buttonOnPressed: () async {
@@ -106,6 +107,7 @@ class _HistoryState extends State<History> {
                 );
               },
             ),
+            Divider(color: Colors.white, thickness: 2, indent: 20, endIndent: 20,),
             Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   color: Colors.black,
@@ -115,7 +117,6 @@ class _HistoryState extends State<History> {
                         String filePath = filesList[index].path;
                         if(isIndexClicked[index] == 0) {
                           return Button(
-                            textSize: 15,
                             buttonText: filePath.substring(
                                 filePath.indexOf('scans/') + 6, filePath.length - 4
                             ),
@@ -133,17 +134,14 @@ class _HistoryState extends State<History> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Button(
-                                textSize: 15,
                                 buttonText: "Lire",
                                 buttonOnPressed: (){startReading(filePath);},
                               ),
                               Button(
-                                textSize: 15,
                                 buttonText: "Supprimer",
                                 buttonOnPressed: (){_deleteScan(filePath);},
                               ),
                               Button(
-                                textSize: 15,
                                 buttonText: "Modifier",
                                 buttonOnPressed: (){
                                   List<int> isIndexClickedNew = List.filled(filesList.length, 0);
@@ -182,7 +180,6 @@ class _HistoryState extends State<History> {
                                   ),
                                 ),
                                 Button(
-                                    textSize: 15,
                                     buttonText: "Valider",
                                     buttonOnPressed: (){_renameScan(filePath, _textController.text);}
                                 ),

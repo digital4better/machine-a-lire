@@ -36,11 +36,7 @@ class NarratorState extends State<Narrator> {
   @override
   void initState() {
     _text = [Span("Analyse du text en cours...")];
-    if (widget.isTextExtracted) {
-      _readTextFile();
-    } else {
-      _parseText();
-    }
+    _parseText();
 
     super.initState();
   }
@@ -51,18 +47,11 @@ class NarratorState extends State<Narrator> {
     super.dispose();
   }
 
-  Future<void> _readTextFile() async {
-    String rawText = await File(widget.path).readAsString();
-    List<Span> text = [Span(rawText)];
-    setState(() {
-      _text = text;
-      _index = 0;
-      _readSentences();
-    });
-  }
-
   Future<void> _parseText() async {
-    final text = await FlutterTesseractOcr.extractText(
+    print(widget.path);
+    final text = widget.isTextExtracted ?
+    await File(widget.path).readAsString() :
+    await FlutterTesseractOcr.extractText(
       widget.path,
       language: 'fra',
       args: {

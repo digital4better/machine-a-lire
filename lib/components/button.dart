@@ -5,7 +5,7 @@ class Button extends StatelessWidget {
     Key? key,
     required this.buttonText,
     required this.buttonOnPressed,
-    this.textSize = 30,
+    this.textSize = 15,
     this.innerPadding = false
   }) : super(key: key);
 
