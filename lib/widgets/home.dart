@@ -3,6 +3,8 @@ import 'package:malo/components/button.dart';
 import 'package:malo/widgets/history.dart';
 import 'package:malo/widgets/vision.dart';
 
+import 'Help.dart';
+
 class Home extends StatelessWidget {
   const Home({Key? key}) : super(key: key);
 
@@ -41,6 +43,21 @@ class Home extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) {
                   return History();
+                },
+              ),
+            );
+          },
+        ),
+        Button(
+          textSize: 30,
+          innerPadding: true,
+          buttonText: "Comment utiliser la machine à lire ?",
+          buttonOnPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) {
+                  return Help();
                 },
               ),
             );
