@@ -86,15 +86,13 @@ class _HistoryState extends State<History> {
                 "Historique des scans",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 30,
                   color: Colors.white,
                   decoration: TextDecoration.none,
                 ),
               ),
             ),
             Button(
-              textSize: 30,
-              innerPadding: true,
               buttonText: "Retourner au menu",
               buttonOnPressed: () async {
                 await Navigator.pushReplacement(

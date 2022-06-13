@@ -3,7 +3,7 @@ import 'package:malo/components/button.dart';
 import 'package:malo/widgets/history.dart';
 import 'package:malo/widgets/vision.dart';
 
-import 'Help.dart';
+import 'help.dart';
 
 class Home extends StatelessWidget {
   const Home({Key? key}) : super(key: key);
