@@ -22,14 +22,20 @@ class SaveScan extends StatefulWidget {
 void _saveScan(String scanName, String text) async {
   Directory('${(await getApplicationDocumentsDirectory()).path}/scans')
       .create()
-      .then((Directory dir) => File(
-      '${dir.path}/${scanName}.txt')
+      .then((Directory dir) => File('${dir.path}/${scanName}.txt')
       .writeAsString(text));
 }
 
 class _SaveScanState extends State<SaveScan> {
 
   TextEditingController _textController =  TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    DateTime now = DateTime.now();
+    _textController.text = "Scan du ${now.toIso8601String().substring(0, 19)}";//${now.year}-${now.month}-${now.day} ${now.hour}:${now.minute}:${now.second}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +67,7 @@ class _SaveScanState extends State<SaveScan> {
                 enabledBorder: const OutlineInputBorder(
                   borderSide: const BorderSide(color: Colors.grey, width: 1.0),
                 ),
-                hintText: "Entre le nom du document scanné",
+                hintText: "Entrez le nom du document scanné",
                 hintStyle: TextStyle(color: Colors.grey),
               ),
             ),

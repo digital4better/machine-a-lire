@@ -17,6 +17,7 @@ class Home extends StatelessWidget {
           height: 40,
         ),
         Button(
+          innerPadding: true,
           buttonText: "Effectuer un nouveau scan",
           buttonOnPressed: () async {
             await Navigator.push(
@@ -30,6 +31,7 @@ class Home extends StatelessWidget {
           },
         ),
         Button(
+          innerPadding: true,
           buttonText: "Consulter l'historique des scans",
           buttonOnPressed: () async {
             await Navigator.push(
