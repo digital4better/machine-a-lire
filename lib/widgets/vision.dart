@@ -29,14 +29,14 @@ class QuadPainter extends CustomPainter {
       late Path path;
       if (Platform.isAndroid) {
         path = Path()
-          ..moveTo(this.quad!.topLeft.y * size.width,
-              this.quad!.topLeft.x * size.height)
-          ..lineTo(this.quad!.topRight.y * size.width,
+          ..moveTo((1-this.quad!.topRight.y) * size.width,
               this.quad!.topRight.x * size.height)
-          ..lineTo(this.quad!.bottomRight.y * size.width,
-              this.quad!.bottomRight.x * size.height)
-          ..lineTo(this.quad!.bottomLeft.y * size.width,
+          ..lineTo((1-this.quad!.topLeft.y) * size.width,
+              this.quad!.topLeft.x * size.height)
+          ..lineTo((1-this.quad!.bottomLeft.y) * size.width,
               this.quad!.bottomLeft.x * size.height)
+          ..lineTo((1-this.quad!.bottomRight.y) * size.width,
+              this.quad!.bottomRight.x * size.height)
           ..close();
       } else {
         path = Path()
