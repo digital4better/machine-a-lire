@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:malo/components/button.dart';
 import 'package:accordion/accordion.dart';
+import 'package:malo/components/tutorialSection.dart';
 import 'home.dart';
 
 class Help extends StatelessWidget {
@@ -26,71 +27,22 @@ class Help extends StatelessWidget {
               ),
             ),
             SizedBox(height: 30,),
-            Accordion(
-                maxOpenSections: 1,
-                headerBackgroundColor: Colors.white,
-                children: [
-                  AccordionSection(
-                      contentBackgroundColor: Colors.black,
-                      contentBorderColor: Colors.white,
-                      header: Text(
-                        'Qu\'est ce que MALO ?',
-                        //style: TextStyle(color: Colors.white),
-                      ),
-                      content: Text(
-                        'MALO est une application permettant nottamment aux personnes mal-voyantes de scanner un document papier, et de lire son texte à voix haute.',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                  ),
-                  AccordionSection(
-                    contentBackgroundColor: Colors.black,
-                    contentBorderColor: Colors.white,
-                    header: Text(
-                      'Comment scanner un document ?',
-                      //style: TextStyle(color: Colors.white),
-                    ),
-                    content: Text(
-                      'Pour scanner un document, lancez un nouveau scan, puis placez la feuille face au téléphone. Des vibrations vous indiquent si le document n\'est pas bien cadré. Quand le document est bien lisible, une photo est prise, et une analyse est lancée. Après quelques secondes, le texte imprimé est alors affiché à l\'écran de votre téléphone.',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  AccordionSection(
-                    contentBackgroundColor: Colors.black,
-                    contentBorderColor: Colors.white,
-                    header: Text(
-                      'Historique des scans',
-                      //style: TextStyle(color: Colors.white),
-                    ),
-                    content: Text(
-                      'Vous pouvez retrouver dans l\'historique les documents que vous avez sauvegardé. Depuis l\'historique, vous pouvez lire, supprimer ou encore renommer un scan',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  AccordionSection(
-                    contentBackgroundColor: Colors.black,
-                    contentBorderColor: Colors.white,
-                    header: Text(
-                      'Le texte détécté est incorrect, que faire ?',
-                      //style: TextStyle(color: Colors.white),
-                    ),
-                    content: Text(
-                      'Si la detection ne fonctionne pas assez bien, assurez vous d\'être bien statique lors de la prise de la photo. Vous pouvez aussi essayer de changer d\'arrière plan pour améliorer le contraste de couleurs.',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ]
+
+            TutorialSection(
+                sectionTitle: 'Qu\'est ce que MALO ?',
+                sectionText: 'MALO est une application permettant nottamment aux personnes mal-voyantes de scanner un document papier, et de lire son texte à voix haute.',
+            ),
+            TutorialSection(
+                sectionTitle: 'Comment scanner un document ?',
+                sectionText: 'Pour scanner un document, lancez un nouveau scan, puis placez la feuille face au téléphone. Des vibrations vous indiquent si le document n\'est pas bien cadré. Quand le document est bien lisible, une photo est prise, et une analyse est lancée. Après quelques secondes, le texte imprimé est alors affiché à l\'écran de votre téléphone.'
+            ),
+            TutorialSection(
+                sectionTitle: 'Historique des scans',
+                sectionText: 'Vous pouvez retrouver dans l\'historique les documents que vous avez sauvegardé. Depuis l\'historique, vous pouvez lire, supprimer ou encore renommer un scan'
+            ),
+            TutorialSection(
+                sectionTitle: 'Le texte détécté est incorrect, que faire ?',
+                sectionText: 'Si la detection ne fonctionne pas assez bien, assurez vous d\'être bien statique lors de la prise de la photo. Vous pouvez aussi essayer de changer d\'arrière plan pour améliorer le contraste de couleurs.'
             ),
             Expanded(child: Container()),
             Button(

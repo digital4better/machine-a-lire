@@ -92,19 +92,6 @@ class _HistoryState extends State<History> {
                 ),
               ),
             ),
-            Button(
-              buttonText: "Retourner au menu",
-              buttonOnPressed: () async {
-                await Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return Home();
-                    },
-                  ),
-                );
-              },
-            ),
             Divider(color: Colors.white, thickness: 2, indent: 20, endIndent: 20,),
             Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
@@ -194,6 +181,21 @@ class _HistoryState extends State<History> {
                       itemCount: filesList.length
                   ),
             ),
+            Expanded(child: Container()),
+            Button(
+              buttonText: "Retourner au menu",
+              buttonOnPressed: () async {
+                await Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return Home();
+                    },
+                  ),
+                );
+              },
+            ),
+            SizedBox(height: 20,)
           ],
         ),
       ),

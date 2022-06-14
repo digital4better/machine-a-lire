@@ -19,26 +19,26 @@ class Button extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: ButtonTheme(
-          minWidth: double.infinity,
-          height: 30,
-          buttonColor: Colors.white,
-          child: OutlinedButton(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: innerPadding ? 10 : 0),
-              child : Text(
-                buttonText,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: textSize
-                ),
+        minWidth: double.infinity,
+        height: 30,
+        buttonColor: Colors.white,
+        child: OutlinedButton(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: innerPadding ? 10 : 0),
+            child : Text(
+              buttonText,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: textSize
               ),
             ),
-            style: OutlinedButton.styleFrom(
-                side: BorderSide(width: 2, color: Colors.white)
-            ),
-            onPressed: buttonOnPressed
-          )
+          ),
+          style: OutlinedButton.styleFrom(
+              side: BorderSide(width: 2, color: Colors.white)
+          ),
+          onPressed: buttonOnPressed
+        )
       ),
     );
   }
