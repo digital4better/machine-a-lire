@@ -131,7 +131,7 @@ class VisionState extends State<Vision>
 
     _initialisation();
 
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   Future<void> _initialisation() async {
@@ -357,7 +357,7 @@ class VisionState extends State<Vision>
   void dispose() {
     _ticker.dispose();
     _controller.dispose();
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

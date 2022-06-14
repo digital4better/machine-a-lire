@@ -29,7 +29,6 @@ dependencies:
   ffi: ^1.1.2
   path_provider: ^2.0.5
   flutter_tesseract_ocr: ^0.4.20
-  accordion: ^2.4.0
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:malo/components/button.dart';
-import 'package:accordion/accordion.dart';
 import 'package:malo/components/tutorialSection.dart';
 import 'home.dart';
 
