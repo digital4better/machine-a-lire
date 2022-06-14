@@ -107,8 +107,6 @@ class VisionState extends State<Vision>
   late ReceivePort _receivePort;
   late SendPort _sendPort;
   late Ticker _ticker;
-  int _tick = 0;
-  //int? _lastTickTimestamp;
   CameraController? _cameraController;
   CameraDescription? _camera;
   CameraImage? _lastCameraImage;
@@ -119,7 +117,6 @@ class VisionState extends State<Vision>
 
   // QUAD DETECTION FUNCTIONS //
   Future _startQuadDetection() async {
-    _tick = 0;
     _ticker.start();
 
     await _cameraController!.startImageStream((CameraImage image) async {
@@ -165,20 +162,12 @@ class VisionState extends State<Vision>
 
   _tickEmptyQuad() {
     _stopHapticFeedback();
-
-    setState(() {
-      //alpha = max(alpha - alphaSpeed, 0);
-      //if (alpha == 0) {
-      //  _previousDetectedQuad = Quad.empty;
-      //}
-    });
   }
 
   _tickDetectedQuad() {
     _startHapticFeedback();
 
     setState(() {
-      //alpha = min(alpha + alphaSpeed, 255);
       if (_previousQuad.isEmpty) {
         _previousQuad = _currentQuad;
       } else {
@@ -195,19 +184,19 @@ class VisionState extends State<Vision>
 
     // TODO add vocal instructions
     // TODO add movement detection for better capture
-    //if (alpha == 255) {
-    num widthPercent = min(_previousQuad.topRight.x - _previousQuad.topLeft.x,
-        _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
-
-    if (widthPercent > 0.75) {
-      //takePictureForAnalyse();
-    } else if (_tick >
-        (maxTickSpeed - minTickSpeed) * ((0.6 - min(0.6, widthPercent)) / 0.6) +
-            maxTickSpeed) {
-      _tick = 0;
+    num widthPercent;
+    if (Platform.isAndroid) {
+      widthPercent = min(_previousQuad.bottomRight.y - _previousQuad.topRight.y,
+          _previousQuad.bottomLeft.y - _previousQuad.topLeft.y);
+    } else {
+      widthPercent = min(_previousQuad.topRight.x - _previousQuad.topLeft.x,
+          _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
-    //}
-    //}
+
+    print("widthPercent" + widthPercent.toString());
+    if (widthPercent > 0.75) {
+      takePictureForAnalyse();
+    }
   }
 
   // HAPTICS FEEDBACK FUNCTIONS //
@@ -345,11 +334,9 @@ class VisionState extends State<Vision>
   // LIFECYCLE WIDGET FUNCTIONS //
   @override
   void initState() {
-    _init();
-
     WidgetsBinding.instance.addObserver(this);
-
     super.initState();
+    _init();
   }
 
   Future _init() async {
@@ -358,6 +345,8 @@ class VisionState extends State<Vision>
     await _initTicker();
 
     await _startQuadDetection();
+
+    setState(() {});
   }
 
   Future _initImagesPath() async {
@@ -407,19 +396,12 @@ class VisionState extends State<Vision>
   }
 
   Future _initTicker() async {
-    //_lastTickTimestamp = 0;
     _ticker = createTicker((Duration elapsed) {
-      //final int delta = elapsed.inMilliseconds - _lastTickTimestamp!;
-      //final int alphaSpeed = (255 * delta / 300).round();
-
       if (_currentQuad.isEmpty) {
         _tickEmptyQuad();
       } else {
         _tickDetectedQuad();
       }
-
-      //_lastTickTimestamp = elapsed.inMilliseconds;
-      _tick++;
     });
   }
 
