@@ -52,7 +52,12 @@ class QuadPainter extends CustomPainter {
       }
 
       canvas.drawPath(
-          path, Paint()..color = Color.fromARGB(alpha, 255, 255, 255));
+          path,
+          Paint()
+            ..color = Color.fromARGB(alpha, 255, 255, 255)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 10
+      );
     }
   }
 
