@@ -334,11 +334,9 @@ class VisionState extends State<Vision>
   // LIFECYCLE WIDGET FUNCTIONS //
   @override
   void initState() {
-    _init();
-
     WidgetsBinding.instance.addObserver(this);
-
     super.initState();
+    _init();
   }
 
   Future _init() async {
@@ -347,6 +345,8 @@ class VisionState extends State<Vision>
     await _initTicker();
 
     await _startQuadDetection();
+
+    setState(() {});
   }
 
   Future _initImagesPath() async {
