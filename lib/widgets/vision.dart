@@ -107,6 +107,9 @@ class VisionState extends State<Vision>
   late ReceivePort _receivePort;
   late SendPort _sendPort;
   late Ticker _ticker;
+  late Quad detectedQuad;
+  bool isDelayOver = false;
+  bool isChecking = false;
   CameraController? _cameraController;
   CameraDescription? _camera;
   CameraImage? _lastCameraImage;
@@ -193,10 +196,39 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    print("widthPercent" + widthPercent.toString());
-    if (widthPercent > 0.75) {
-      takePictureForAnalyse();
+    if (isDelayOver) {
+      print("checking...");
+      checkIfQuadIsStable();
     }
+
+    //print("widthPercent" + widthPercent.toString());
+    if (widthPercent > 0.75 && !isChecking) {
+      print("width>0.75 !");
+      isChecking = true;
+      detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight, _previousQuad.bottomRight, _previousQuad.bottomLeft);
+      Future.delayed(const Duration(seconds: 3),(){isDelayOver = true;});
+    }
+  }
+  
+  void checkIfQuadIsStable() {
+    print((_previousQuad.topLeft.x-detectedQuad.topLeft.x).abs());
+      if(
+        (_previousQuad.topLeft.x-detectedQuad.topLeft.x).abs() < 0.05 &&
+        (_previousQuad.topLeft.y-detectedQuad.topLeft.y).abs() < 0.05 &&
+        (_previousQuad.topRight.x-detectedQuad.topRight.x).abs() < 0.05 &&
+        (_previousQuad.topRight.x-detectedQuad.topRight.x).abs() < 0.05 &&
+        (_previousQuad.bottomLeft.y-detectedQuad.bottomLeft.y).abs() < 0.05 &&
+        (_previousQuad.bottomLeft.x-detectedQuad.bottomLeft.x).abs() < 0.05 &&
+        (_previousQuad.bottomRight.x-detectedQuad.bottomRight.x).abs() < 0.05 &&
+        (_previousQuad.bottomRight.y-detectedQuad.bottomRight.y).abs() < 0.05
+      ){
+        print("taking picture !");
+        takePictureForAnalyse();
+      } else {
+        isDelayOver = false;
+        isChecking = false;
+        print("please stop moving you dumb gorilla");
+      }
   }
 
   // HAPTICS FEEDBACK FUNCTIONS //
