@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/home.dart';
 
 void main() async {
@@ -11,9 +10,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  MyApp() {
-    Speech().speak("Bienvenue !");
-  }
+  MyApp() {}
 
   @override
   Widget build(BuildContext context) => MaterialApp(home: Home());

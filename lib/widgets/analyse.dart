@@ -17,17 +17,12 @@ class Analyse extends StatefulWidget {
 }
 
 class AnalyseState extends State<Analyse> {
-
   Future _init() async {
-    Speech()
-        .speak("Document capturé. En cours de traitement. Patientez.");
-
     // Then start analyse.
     _analysePicture();
   }
 
   Future _analysePicture() async {
-
     XFile picture = XFile(widget.imagePath);
 
     // Detect quad from taken picture.
@@ -38,8 +33,7 @@ class AnalyseState extends State<Analyse> {
 
     if (quadFromPicture.isEmpty) {
       // No quad found, then try again.
-      Speech().speak(
-          "Oups, la détection du document à échouée. Veuillez réesayer de capture votre document.");
+      await Speech().speak("La détection a échouée. Réesayer.");
 
       Navigator.pushReplacement(
         context,
@@ -50,9 +44,6 @@ class AnalyseState extends State<Analyse> {
         ),
       );
     } else {
-      Speech().speak(
-          "Détection du document réussie. Patientez encore un peu, le texte est en cours d'analyse.");
-
       // Quad found, warped it for better text detection.
       await warpShot(picture, quadFromPicture, widget.imagePath);
 
@@ -76,18 +67,40 @@ class AnalyseState extends State<Analyse> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: GestureDetector(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Stack(
-              fit: StackFit.expand,
-              children: [
-                Center(child: CircularProgressIndicator(color: Colors.blue)),
-              ],
-            ),
-          ],
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Semantics(
+            child: Text("Analyse du document"),
+            label:
+                "Analyse du document. Document capturé. En cours de traitement. Patientez.",
+          ),
+          automaticallyImplyLeading: true,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  "Document capturé. En cours de traitement. Patientez.",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Icon(
+                Icons.hourglass_top,
+                size: 60,
+                color: Colors.white,
+              ),
+            ],
+          ),
         ),
       ),
     );
