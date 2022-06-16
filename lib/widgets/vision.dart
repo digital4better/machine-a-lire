@@ -108,7 +108,6 @@ class VisionState extends State<Vision>
   late Ticker _ticker;
   late Quad detectedQuad;
   bool isTalking = false;
-  bool isDelayOver = false;
   bool isChecking = false;
   CameraController? _cameraController;
   CameraDescription? _camera;
@@ -140,7 +139,7 @@ class VisionState extends State<Vision>
         _lastCameraImage = image;
       }
     });
-    await _cameraController!.setFlashMode(FlashMode.torch);
+    _cameraController!.setFlashMode(FlashMode.torch);
 
     Speech().speak(
         "Scan de document en cours, présentez un document devant l’appareil.");
@@ -165,6 +164,7 @@ class VisionState extends State<Vision>
 
   _tickEmptyQuad() {
     _stopHapticFeedback();
+    _resetQuads();
   }
 
   _tickDetectedQuad() {
@@ -196,17 +196,15 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    if (isDelayOver) {
-      checkIfQuadIsStable();
-    }
-
     //print("widthPercent" + widthPercent.toString());
     if (widthPercent > 0.75 && !isChecking) {
       isChecking = true;
-      detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
-          _previousQuad.bottomRight, _previousQuad.bottomLeft);
-      Future.delayed(const Duration(seconds: 3), () {
-        isDelayOver = true;
+      detectedQuad = Quad(
+          _previousQuad.topLeft, _previousQuad.topRight,
+          _previousQuad.bottomRight, _previousQuad.bottomLeft
+      );
+      Future.delayed(const Duration(milliseconds: 500), () {
+        checkIfQuadIsStable(0);
       });
     }
 
@@ -218,21 +216,24 @@ class VisionState extends State<Vision>
     }
   }
 
-  void checkIfQuadIsStable() {
-    print((_previousQuad.topLeft.x - detectedQuad.topLeft.x).abs());
+  void checkIfQuadIsStable(int timesCheck) {
+    print(timesCheck);
     if ((_previousQuad.topLeft.x - detectedQuad.topLeft.x).abs() < 0.05 &&
         (_previousQuad.topLeft.y - detectedQuad.topLeft.y).abs() < 0.05 &&
         (_previousQuad.topRight.x - detectedQuad.topRight.x).abs() < 0.05 &&
-        (_previousQuad.topRight.x - detectedQuad.topRight.x).abs() < 0.05 &&
+        (_previousQuad.topRight.y - detectedQuad.topRight.y).abs() < 0.05 &&
         (_previousQuad.bottomLeft.y - detectedQuad.bottomLeft.y).abs() < 0.05 &&
         (_previousQuad.bottomLeft.x - detectedQuad.bottomLeft.x).abs() < 0.05 &&
         (_previousQuad.bottomRight.x - detectedQuad.bottomRight.x).abs() <
             0.05 &&
         (_previousQuad.bottomRight.y - detectedQuad.bottomRight.y).abs() <
             0.05) {
-      takePictureForAnalyse();
+      timesCheck == 5
+          ? takePictureForAnalyse()
+          : Future.delayed(const Duration(milliseconds: 500), () {
+              checkIfQuadIsStable(timesCheck + 1);
+            });
     } else {
-      isDelayOver = false;
       isChecking = false;
     }
   }
@@ -367,7 +368,6 @@ class VisionState extends State<Vision>
     await _initTicker();
 
     await _startQuadDetection();
-
     setState(() {});
   }
 
