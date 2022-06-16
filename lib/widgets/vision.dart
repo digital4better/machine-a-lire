@@ -310,8 +310,6 @@ class VisionState extends State<Vision>
   }
 
   Future takePictureForAnalyseForAndroid() async {
-    Speech().speak("Ne bougez plus votre appareil.");
-
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection(isKeepFlashOn: true);
     XFile picture = await _cameraController!.takePicture();
@@ -343,8 +341,6 @@ class VisionState extends State<Vision>
     if (_lastCameraImage != null &&
         _cameraController != null &&
         _cameraController!.value.isInitialized) {
-      _stopHapticFeedback(); // TODO check if useful
-
       if (Platform.isAndroid) {
         takePictureForAnalyseForAndroid();
       } else {
