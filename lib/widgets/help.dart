@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:malo/components/button.dart';
 import 'package:malo/components/tutorialSection.dart';
-
-import 'home.dart';
 
 class Help extends StatelessWidget {
   const Help({Key? key}) : super(key: key);
@@ -49,19 +46,6 @@ class Help extends StatelessWidget {
                   ),
                 ),
               ),
-              Button(
-                buttonText: "Retourner au menu",
-                buttonOnPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) {
-                        return Home();
-                      },
-                    ),
-                  );
-                },
-              )
             ],
           ),
         ),
