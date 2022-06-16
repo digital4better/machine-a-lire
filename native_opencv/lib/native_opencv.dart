@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:ffi/ffi.dart';
-import 'package:flutter/material.dart';
 
 final DynamicLibrary nativeLib = Platform.isAndroid
     ? DynamicLibrary.open("libnative_opencv.so")
@@ -78,15 +77,13 @@ Detection detectQuad(CameraImage image) {
   }
 }
 
-Future<Detection> detectQuadFromShot(XFile picture) async {
-  var decodedImage = await decodeImageFromList(await picture.readAsBytes());
-
+Detection detectQuadFromShot(XFile picture, int width, int height) {
   Pointer<Utf8> utf8Pointer = picture.path.toNativeUtf8();
 
   return detectQuadFromShotNative(
     utf8Pointer,
-    decodedImage.width,
-    decodedImage.height,
+    width,
+    height,
   ).ref;
 }
 
@@ -288,11 +285,11 @@ void warpImage(BGRImage image, Quad quad, String path) {
   }
 }
 
-Future warpShot(XFile file, Quad quad, String path) async {
-  var decodedImage = await decodeImageFromList(await file.readAsBytes());
+Future warpShot(
+    XFile file, Quad quad, String path, int width, int height) async {
   return warpShotNative(
-    decodedImage.width,
-    decodedImage.height,
+    width,
+    height,
     quad.topLeft.x.toDouble(),
     quad.topLeft.y.toDouble(),
     quad.topRight.x.toDouble(),
