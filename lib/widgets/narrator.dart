@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
-import 'package:malo/widgets/home.dart';
 import 'package:malo/widgets/saveScan.dart';
 
 class Narrator extends StatefulWidget {
@@ -33,11 +31,20 @@ class NarratorState extends State<Narrator> {
   List<Span> _text = [];
   int _index = -1;
 
+  void _saveDocument() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return SaveScan(text: textToSave);
+        },
+      ),
+    );
+  }
+
   @override
   void initState() {
-    _text = [Span("Analyse du text en cours...")];
     _parseText();
-
     super.initState();
   }
 
@@ -48,17 +55,16 @@ class NarratorState extends State<Narrator> {
   }
 
   Future<void> _parseText() async {
-    print(widget.path);
-    final text = widget.isTextExtracted ?
-    await File(widget.path).readAsString() :
-    await FlutterTesseractOcr.extractText(
-      widget.path,
-      language: 'fra',
-      args: {
-        "psm": "6",
-        "preserve_interword_spaces": "1",
-      },
-    );
+    final text = widget.isTextExtracted
+        ? await File(widget.path).readAsString()
+        : await FlutterTesseractOcr.extractText(
+            widget.path,
+            language: 'fra',
+            args: {
+              "psm": "0",
+              "preserve_interword_spaces": "1",
+            },
+          );
 
     setState(() {
       _text = text
@@ -74,110 +80,91 @@ class NarratorState extends State<Narrator> {
     setState(() {
       textToSave = text;
     });
-
-    await Speech().speak(
-        "La lecture va commencer. Appuyer sur l'écran pour passer un paragraphe. Appuyez deux fois pour arrêter la lecture.");
-
-    setState(() {
-      _index = 0;
-      _readSentences();
-    });
-  }
-
-  Future _readSentences() async {
-    await Speech().stop();
-
-    while (_index < _text.length) {
-      await _readSentenceByIndex(_index);
-      setState(() {
-        _index += 1;
-      });
-    }
-
-    await Speech().speak(widget.isTextExtracted ? "Fin de la lecture. Retour au menu principal" : "Fin de la lecture. Veuillez entrer le nom du document scanné .");
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          return widget.isTextExtracted ? Home() : SaveScan(text: textToSave,);
-        },
-      ),
-    );
-  }
-
-  Future _readSentenceByIndex(int index) async {
-    _scrollToSentence(index);
-    await Speech().speak(_text[index].text);
-  }
-
-  _scrollToSentence(int index) async {
-    RenderBox? box =
-        _text[index].key.currentContext?.findRenderObject() as RenderBox?;
-
-    if (box != null) {
-      int delta = box.localToGlobal(Offset.zero).dy.toInt();
-      _controller.animateTo(
-        min(
-          _controller.offset + delta - PADDING,
-          _controller.position.maxScrollExtent,
-        ),
-        duration: Duration(milliseconds: 500),
-        curve: Curves.fastOutSlowIn,
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      child: Container(
-        color: Colors.black,
-        child: SingleChildScrollView(
-          controller: _controller,
-          padding: EdgeInsets.fromLTRB(10, PADDING, 10, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(
-              _text.length,
-              (i) => Padding(
-                key: _text[i].key,
-                padding: EdgeInsets.only(bottom: PADDING),
-                child: Text(
-                  _text[i].text,
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    fontWeight: _index == i ? FontWeight.w800 : FontWeight.w400,
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text("Lecture du document"),
+          automaticallyImplyLeading: true,
+        ),
+        body: _text.isNotEmpty
+            ? SingleChildScrollView(
+                controller: _controller,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                    bottom: 60,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(
+                      _text.length,
+                      (i) => Padding(
+                        key: _text[i].key,
+                        padding: EdgeInsets.only(bottom: PADDING),
+                        child: Text(
+                          _text[i].text,
+                          style: TextStyle(
+                            fontSize: 20.0,
+                            fontWeight:
+                                _index == i ? FontWeight.w800 : FontWeight.w400,
+                            color: Colors.white,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        "Analyse du texte. Patientez.",
+                        style: TextStyle(color: Colors.white, fontSize: 20),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Icon(
+                      Icons.hourglass_top,
+                      size: 60,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ),
+        floatingActionButton: !widget.isTextExtracted && _text.isNotEmpty
+            ? FloatingActionButton(
+                onPressed: _saveDocument,
+                backgroundColor: Colors.white,
+                child: Semantics(
+                  hint: "Sauvegarder le document",
+                  child: Icon(
+                    Icons.save,
+                    color: Colors.black,
+                  ),
+                ),
+              )
+            : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       ),
-      onTap: () async {
-        setState(() {
-          _index += 1;
-          _readSentences();
-        });
-      },
-      onDoubleTap: () async {
-        setState(() {
-          _index = -1;
-        });
-        await Speech().stop();
-        Speech().speak("Lecture arrêtée. Retour au menu.");
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              return Home();
-            },
-          ),
-        );
-      },
     );
   }
 }

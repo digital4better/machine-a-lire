@@ -6,7 +6,7 @@ class Button extends StatelessWidget {
     required this.buttonText,
     required this.buttonOnPressed,
     this.textSize = 15,
-    this.innerPadding = false
+    this.innerPadding = true,
   }) : super(key: key);
 
   final String buttonText;
@@ -16,29 +16,28 @@ class Button extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: ButtonTheme(
-        minWidth: double.infinity,
-        height: 30,
-        buttonColor: Colors.white,
-        child: OutlinedButton(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: innerPadding ? 10 : 0),
-            child : Text(
-              buttonText,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: textSize
-              ),
+    return ButtonTheme(
+      height: 30,
+      buttonColor: Colors.white,
+      child: OutlinedButton(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: innerPadding ? 10 : 0),
+          child: Text(
+            buttonText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: textSize,
             ),
           ),
-          style: OutlinedButton.styleFrom(
-              side: BorderSide(width: 2, color: Colors.white)
+        ),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            width: 2,
+            color: Colors.white,
           ),
-          onPressed: buttonOnPressed
-        )
+        ),
+        onPressed: buttonOnPressed,
       ),
     );
   }

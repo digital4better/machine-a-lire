@@ -9,7 +9,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
-import 'package:malo/widgets/home.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -144,7 +143,7 @@ class VisionState extends State<Vision>
     await _cameraController!.setFlashMode(FlashMode.torch);
 
     Speech().speak(
-        "Scan de document prêt, présentez un document devant l’appareil.");
+        "Scan de document en cours, présentez un document devant l’appareil.");
   }
 
   Future _stopQuadDetection({bool isKeepFlashOn = false}) async {
@@ -203,39 +202,39 @@ class VisionState extends State<Vision>
 
     //print("widthPercent" + widthPercent.toString());
     if (widthPercent > 0.75 && !isChecking) {
-      print("width>0.75 !");
       isChecking = true;
-      detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight, _previousQuad.bottomRight, _previousQuad.bottomLeft);
-      Future.delayed(const Duration(seconds: 3),(){isDelayOver = true;});
+      detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
+          _previousQuad.bottomRight, _previousQuad.bottomLeft);
+      Future.delayed(const Duration(seconds: 3), () {
+        isDelayOver = true;
+      });
     }
 
     if (widthPercent < 0.75 && isTalking == false) {
       isTalking = true;
-      Speech().speak("Rapprochez l'appareil de la feuille").then(
-              (e) {
-                isTalking = false;
-              }
-      );
+      Speech().speak("Rapprochez l'appareil de la feuille").then((e) {
+        isTalking = false;
+      });
     }
   }
-  
+
   void checkIfQuadIsStable() {
-    print((_previousQuad.topLeft.x-detectedQuad.topLeft.x).abs());
-      if(
-        (_previousQuad.topLeft.x-detectedQuad.topLeft.x).abs() < 0.05 &&
-        (_previousQuad.topLeft.y-detectedQuad.topLeft.y).abs() < 0.05 &&
-        (_previousQuad.topRight.x-detectedQuad.topRight.x).abs() < 0.05 &&
-        (_previousQuad.topRight.x-detectedQuad.topRight.x).abs() < 0.05 &&
-        (_previousQuad.bottomLeft.y-detectedQuad.bottomLeft.y).abs() < 0.05 &&
-        (_previousQuad.bottomLeft.x-detectedQuad.bottomLeft.x).abs() < 0.05 &&
-        (_previousQuad.bottomRight.x-detectedQuad.bottomRight.x).abs() < 0.05 &&
-        (_previousQuad.bottomRight.y-detectedQuad.bottomRight.y).abs() < 0.05
-      ){
-        takePictureForAnalyse();
-      } else {
-        isDelayOver = false;
-        isChecking = false;
-      }
+    print((_previousQuad.topLeft.x - detectedQuad.topLeft.x).abs());
+    if ((_previousQuad.topLeft.x - detectedQuad.topLeft.x).abs() < 0.05 &&
+        (_previousQuad.topLeft.y - detectedQuad.topLeft.y).abs() < 0.05 &&
+        (_previousQuad.topRight.x - detectedQuad.topRight.x).abs() < 0.05 &&
+        (_previousQuad.topRight.x - detectedQuad.topRight.x).abs() < 0.05 &&
+        (_previousQuad.bottomLeft.y - detectedQuad.bottomLeft.y).abs() < 0.05 &&
+        (_previousQuad.bottomLeft.x - detectedQuad.bottomLeft.x).abs() < 0.05 &&
+        (_previousQuad.bottomRight.x - detectedQuad.bottomRight.x).abs() <
+            0.05 &&
+        (_previousQuad.bottomRight.y - detectedQuad.bottomRight.y).abs() <
+            0.05) {
+      takePictureForAnalyse();
+    } else {
+      isDelayOver = false;
+      isChecking = false;
+    }
   }
 
   // HAPTICS FEEDBACK FUNCTIONS //
@@ -287,9 +286,6 @@ class VisionState extends State<Vision>
 
   // DO ANALYSE FUNCTIONS //
   Future takePictureForAnalyseForIos() async {
-    await Speech()
-        .speak("Capture effectuée. Traitement en cours, veuillez patienter.");
-
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection();
 
@@ -314,7 +310,7 @@ class VisionState extends State<Vision>
   }
 
   Future takePictureForAnalyseForAndroid() async {
-    Speech().speak("Capture en cours, ne bougez plus votre appareil.");
+    Speech().speak("Ne bougez plus votre appareil.");
 
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection(isKeepFlashOn: true);
@@ -355,19 +351,6 @@ class VisionState extends State<Vision>
         takePictureForAnalyseForIos();
       }
     }
-  }
-
-  void goToMainMenu() async {
-    Speech().speak("Retour au menu principal");
-
-    await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          return Home();
-        },
-      ),
-    );
   }
 
   // LIFECYCLE WIDGET FUNCTIONS //
@@ -491,9 +474,10 @@ class VisionState extends State<Vision>
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: Text("Scan de document"),
-            automaticallyImplyLeading: true),
+          backgroundColor: Colors.black,
+          title: Text("Scan de document"),
+          automaticallyImplyLeading: true,
+        ),
         body: Center(
           child: Transform.scale(
             scale: scale,
