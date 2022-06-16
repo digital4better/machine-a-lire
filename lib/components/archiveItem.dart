@@ -159,19 +159,23 @@ class _ArchiveItemState extends State<ArchiveItem> {
           contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
           children: [
             TextField(
-              style:
-                  TextStyle(color: Colors.black, backgroundColor: Colors.white),
+              style: TextStyle(color: Colors.white),
               controller: _textController,
               decoration: InputDecoration(
-                fillColor: Colors.white,
-                filled: true,
+                label: Text(
+                  "Nom du document",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                  ),
+                ),
                 focusedBorder: const OutlineInputBorder(
                   borderSide: const BorderSide(color: Colors.white, width: 3.0),
                 ),
                 enabledBorder: const OutlineInputBorder(
                   borderSide: const BorderSide(color: Colors.grey, width: 1.0),
                 ),
-                hintText: "Saisir le nouveau nom du document",
+                hintText: "Saisir le nom du document",
                 hintStyle: TextStyle(color: Colors.grey),
               ),
             ),
