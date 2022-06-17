@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -16,20 +17,59 @@ class Analyse extends StatefulWidget {
   AnalyseState createState() => AnalyseState();
 }
 
-class AnalyseState extends State<Analyse> {
-  Future _init() async {
-    // Then start analyse.
-    _analysePicture();
+void _detectQuadAndWarp(SendPort sendPort) async {
+  ReceivePort spawnReceivePort = ReceivePort();
+  sendPort.send(spawnReceivePort.sendPort);
+
+  await for (dynamic msg in spawnReceivePort) {
+    var data = msg[0];
+
+    if (data is XFile) {
+      var width = msg[1];
+      var height = msg[2];
+      SendPort replyTo = msg[3];
+
+      try {
+        Detection detectionFromPicture =
+            detectQuadFromShot(data, width, height);
+        Quad quad = Quad.from(detectionFromPicture);
+
+        if (!quad.isEmpty) {
+          warpShot(data, quad, data.path, width, height);
+        }
+
+        replyTo.send(quad);
+      } catch (_) {
+        replyTo.send(Quad.empty);
+      }
+    }
+
+    if (data is String && data == "close") {
+      spawnReceivePort.close();
+    }
   }
+}
+
+/// sends a message on a port, receives the response,
+/// and returns the message
+Future sendReceiveAnalyse(SendPort port, msg, width, height) {
+  ReceivePort response = new ReceivePort();
+  port.send([msg, width, height, response.sendPort]);
+  return response.first;
+}
+
+class AnalyseState extends State<Analyse> {
+  late ReceivePort _receivePort;
+  late SendPort _sendPort;
 
   Future _analysePicture() async {
     XFile picture = XFile(widget.imagePath);
-
     // Detect quad from taken picture.
-    Detection detectionFromPicture = await detectQuadFromShot(picture);
-    Quad quadFromPicture = Quad.from(detectionFromPicture);
+    var decodedImage = await decodeImageFromList(await picture.readAsBytes());
+    Quad quadFromPicture = await sendReceiveAnalyse(
+        _sendPort, picture, decodedImage.width, decodedImage.height);
 
-    setState(() {});
+    sendReceive(_sendPort, "close");
 
     if (quadFromPicture.isEmpty) {
       // No quad found, then try again.
@@ -44,11 +84,8 @@ class AnalyseState extends State<Analyse> {
         ),
       );
     } else {
-      // Quad found, warped it for better text detection.
-      await warpShot(picture, quadFromPicture, widget.imagePath);
-
       // Go to narrator screen
-      await Navigator.pushReplacement(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) {
@@ -63,6 +100,25 @@ class AnalyseState extends State<Analyse> {
   void initState() {
     _init();
     super.initState();
+  }
+
+  Future _init() async {
+    // Then start analyse.
+    await _initIsolatePort();
+    _analysePicture();
+  }
+
+  /// Detecting quad is an heavy task, that's why it will be delegate in an isolate port.
+  /// In order to avoid UI freeze.
+  Future _initIsolatePort() async {
+    _receivePort = ReceivePort();
+
+    await Isolate.spawn<SendPort>(
+      _detectQuadAndWarp,
+      _receivePort.sendPort,
+    );
+
+    _sendPort = await _receivePort.first;
   }
 
   @override
@@ -94,10 +150,11 @@ class AnalyseState extends State<Analyse> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              Icon(
-                Icons.hourglass_top,
-                size: 60,
-                color: Colors.white,
+              SizedBox(
+                height: 40,
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               ),
             ],
           ),
