@@ -101,8 +101,6 @@ Future sendReceive(SendPort port, msg) {
 class VisionState extends State<Vision>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final num widthDetectionThreshold = 0.75;
-  final int minTickSpeed = 60;
-  final int maxTickSpeed = 3;
   late String _imagesRootPath;
   late ReceivePort _receivePort;
   late SendPort _sendPort;
@@ -143,12 +141,14 @@ class VisionState extends State<Vision>
     _cameraController!.setFlashMode(FlashMode.torch);
 
     isTalking = true;
-    Speech().speak(
-        "Scan de document en cours, présentez un document devant l’appareil.").then((e) {
-          Future.delayed(const Duration(seconds: 1), () {
-            isTalking = false;
-          });
-        });;
+    Speech()
+        .speak(
+            "Scan de document en cours, présentez un document devant l’appareil.")
+        .then((e) {
+      Future.delayed(const Duration(seconds: 1), () {
+        isTalking = false;
+      });
+    });
   }
 
   Future _stopQuadDetection({bool isKeepFlashOn = false}) async {
@@ -171,7 +171,7 @@ class VisionState extends State<Vision>
   _tickEmptyQuad() {
     _stopHapticFeedback();
     _resetQuads();
-    if(isTalking == false) {
+    if (isTalking == false) {
       isTalking = true;
       Speech().speak("Aucun document détecté").then((e) {
         Future.delayed(const Duration(seconds: 1), () {
@@ -212,7 +212,7 @@ class VisionState extends State<Vision>
 
     //print("widthPercent" + widthPercent.toString());
     if (widthPercent > widthDetectionThreshold) {
-      if(isTalking == false) {
+      if (isTalking == false) {
         isTalking = true;
         Speech().speak("Ne bougez plus, document détecté").then((e) {
           Future.delayed(const Duration(seconds: 1), () {
@@ -220,12 +220,10 @@ class VisionState extends State<Vision>
           });
         });
       }
-      if(!isChecking) {
+      if (!isChecking) {
         isChecking = true;
-        detectedQuad = Quad(
-            _previousQuad.topLeft, _previousQuad.topRight,
-            _previousQuad.bottomRight, _previousQuad.bottomLeft
-        );
+        detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
+            _previousQuad.bottomRight, _previousQuad.bottomLeft);
         Future.delayed(const Duration(milliseconds: 500), () {
           checkIfQuadIsStable(0);
         });
