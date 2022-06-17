@@ -208,6 +208,12 @@ final void Function(
                     Pointer<Utf8>)>>("warp_shot")
         .asFunction();
 
+final void Function(
+    Pointer<Utf8> path) makeRotationNative =
+nativeLib
+    .lookup<NativeFunction<Void Function(Pointer<Utf8>)>>("make_rotation")
+    .asFunction();
+
 class Quad {
   Point topLeft;
   Point topRight;
@@ -300,4 +306,9 @@ Future warpShot(
     quad.bottomLeft.y.toDouble(),
     path.toNativeUtf8(),
   );
+}
+
+Future makeRotation(
+    String path) async {
+  return makeRotationNative(path.toNativeUtf8());
 }

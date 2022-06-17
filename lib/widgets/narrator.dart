@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/saveScan.dart';
+import 'package:native_opencv/native_opencv.dart';
+
+import 'package:language_tool/language_tool.dart' show LanguageTool;
 
 class Narrator extends StatefulWidget {
   Narrator(this.path, {this.isTextExtracted = false});
@@ -54,14 +57,31 @@ class NarratorState extends State<Narrator> {
     super.dispose();
   }
 
+  Future<num> getErrorRate(List<Span> text) async {
+    int incorrectSentences = 0;
+    var tool = LanguageTool(language: 'fr');
+    String wholeText = "";
+
+    for(var sentence in text){
+      wholeText = wholeText + sentence.text + " ";
+    }
+    var errors = await tool.check(wholeText);
+
+    num sentenceErrorRate = errors.length / wholeText.split(" ").length;
+
+    print(sentenceErrorRate);
+
+    return sentenceErrorRate;
+  }
+
   Future<void> _parseText() async {
+    //makeRotation(widget.path);
     final text = widget.isTextExtracted
         ? await File(widget.path).readAsString()
         : await FlutterTesseractOcr.extractText(
             widget.path,
             language: 'fra',
             args: {
-              "psm": "0",
               "preserve_interword_spaces": "1",
             },
           );
@@ -76,6 +96,12 @@ class NarratorState extends State<Narrator> {
           .map((t) => Span(t))
           .toList();
     });
+
+    /*num errorRate = await getErrorRate(_text);
+    if(errorRate > 0.25) {
+      print("rotating since too many error");
+      makeRotation();
+    }*/
 
     setState(() {
       textToSave = text;

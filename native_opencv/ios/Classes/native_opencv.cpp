@@ -302,3 +302,17 @@ void warp_shot(int32_t width, int32_t height, double tl_x, double tl_y, double t
 
     printf("Warped image ! %s", path);
 }
+
+extern "C" __attribute__((visibility("default"))) __attribute__((used))
+void make_rotation(char *path) {
+
+    cv::Mat original = cv::imread(path);
+    cv::Mat rotated;
+
+    cv::Point2f center(original.cols/2, original.rows/2);
+    cv::Mat rotation = cv::getRotationMatrix2D(center, 180, 1.0);
+
+    cv::warpAffine(original, rotated, rotation, original.size());
+
+    cv::imwrite(path, rotated);
+}
