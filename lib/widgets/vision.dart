@@ -100,6 +100,7 @@ Future sendReceive(SendPort port, msg) {
 
 class VisionState extends State<Vision>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  final num widthDetectionThreshold = 0.75;
   final int minTickSpeed = 60;
   final int maxTickSpeed = 3;
   late String _imagesRootPath;
@@ -141,8 +142,13 @@ class VisionState extends State<Vision>
     });
     _cameraController!.setFlashMode(FlashMode.torch);
 
+    isTalking = true;
     Speech().speak(
-        "Scan de document en cours, présentez un document devant l’appareil.");
+        "Scan de document en cours, présentez un document devant l’appareil.").then((e) {
+          Future.delayed(const Duration(seconds: 1), () {
+            isTalking = false;
+          });
+        });;
   }
 
   Future _stopQuadDetection({bool isKeepFlashOn = false}) async {
@@ -165,6 +171,14 @@ class VisionState extends State<Vision>
   _tickEmptyQuad() {
     _stopHapticFeedback();
     _resetQuads();
+    if(isTalking == false) {
+      isTalking = true;
+      Speech().speak("Aucun document détecté").then((e) {
+        Future.delayed(const Duration(seconds: 1), () {
+          isTalking = false;
+        });
+      });
+    }
   }
 
   _tickDetectedQuad() {
@@ -197,21 +211,33 @@ class VisionState extends State<Vision>
     }
 
     //print("widthPercent" + widthPercent.toString());
-    if (widthPercent > 0.75 && !isChecking) {
-      isChecking = true;
-      detectedQuad = Quad(
-          _previousQuad.topLeft, _previousQuad.topRight,
-          _previousQuad.bottomRight, _previousQuad.bottomLeft
-      );
-      Future.delayed(const Duration(milliseconds: 500), () {
-        checkIfQuadIsStable(0);
-      });
+    if (widthPercent > widthDetectionThreshold) {
+      if(isTalking == false) {
+        isTalking = true;
+        Speech().speak("Ne bougez plus, document détecté").then((e) {
+          Future.delayed(const Duration(seconds: 1), () {
+            isTalking = false;
+          });
+        });
+      }
+      if(!isChecking) {
+        isChecking = true;
+        detectedQuad = Quad(
+            _previousQuad.topLeft, _previousQuad.topRight,
+            _previousQuad.bottomRight, _previousQuad.bottomLeft
+        );
+        Future.delayed(const Duration(milliseconds: 500), () {
+          checkIfQuadIsStable(0);
+        });
+      }
     }
 
-    if (widthPercent < 0.75 && isTalking == false) {
+    if (widthPercent < widthDetectionThreshold && isTalking == false) {
       isTalking = true;
       Speech().speak("Rapprochez l'appareil de la feuille").then((e) {
-        isTalking = false;
+        Future.delayed(const Duration(seconds: 1), () {
+          isTalking = false;
+        });
       });
     }
   }
