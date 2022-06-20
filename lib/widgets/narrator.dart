@@ -86,87 +86,85 @@ class NarratorState extends State<Narrator> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: Text("Lecture du document"),
-          automaticallyImplyLeading: true,
-        ),
-        body: _text.isNotEmpty
-            ? SingleChildScrollView(
-                controller: _controller,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 20,
-                    bottom: 60,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: List.generate(
-                      _text.length,
-                      (i) => Padding(
-                        key: _text[i].key,
-                        padding: EdgeInsets.only(bottom: PADDING),
-                        child: Text(
-                          _text[i].text,
-                          style: TextStyle(
-                            fontSize: 20.0,
-                            fontWeight:
-                                _index == i ? FontWeight.w800 : FontWeight.w400,
-                            color: Colors.white,
-                            decoration: TextDecoration.none,
-                          ),
+        title: Text("Lecture du document"),
+        automaticallyImplyLeading: true,
+      ),
+      body: _text.isNotEmpty
+          ? SingleChildScrollView(
+              controller: _controller,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: 60,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(
+                    _text.length,
+                    (i) => Padding(
+                      key: _text[i].key,
+                      padding: EdgeInsets.only(bottom: PADDING),
+                      child: Text(
+                        _text[i].text,
+                        style: TextStyle(
+                          fontSize: 20.0,
+                          fontWeight:
+                              _index == i ? FontWeight.w800 : FontWeight.w400,
+                          color: Colors.white,
+                          decoration: TextDecoration.none,
                         ),
                       ),
                     ),
                   ),
                 ),
-              )
-            : Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 20,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Text(
-                        "Analyse du texte. Patientez.",
-                        style: TextStyle(color: Colors.white, fontSize: 20),
-                        textAlign: TextAlign.center,
-                      ),
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      "Analyse du texte. Patientez.",
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                      textAlign: TextAlign.center,
                     ),
-                    Icon(
-                      Icons.hourglass_top,
-                      size: 60,
-                      color: Colors.white,
-                    ),
-                  ],
+                  ),
+                  Icon(
+                    Icons.hourglass_top,
+                    size: 60,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+      floatingActionButton: !widget.isTextExtracted && _text.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: _saveDocument,
+              backgroundColor: Colors.white,
+              child: Semantics(
+                hint: "Sauvegarder le document",
+                child: Icon(
+                  Icons.save,
+                  color: Colors.black,
                 ),
               ),
-        floatingActionButton: !widget.isTextExtracted && _text.isNotEmpty
-            ? FloatingActionButton(
-                onPressed: _saveDocument,
-                backgroundColor: Colors.white,
-                child: Semantics(
-                  hint: "Sauvegarder le document",
-                  child: Icon(
-                    Icons.save,
-                    color: Colors.black,
-                  ),
-                ),
-              )
-            : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
-      ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
     );
   }
 }

@@ -123,41 +123,39 @@ class AnalyseState extends State<Analyse> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: Semantics(
-            child: Text("Analyse du document"),
-            label:
-                "Analyse du document. Document capturé. En cours de traitement. Patientez.",
-          ),
-          automaticallyImplyLeading: true,
+        title: Semantics(
+          child: Text("Analyse du document"),
+          label:
+              "Analyse du document. Document capturé. En cours de traitement. Patientez.",
         ),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  "Document capturé. En cours de traitement. Patientez.",
-                  style: TextStyle(color: Colors.white, fontSize: 20),
-                  textAlign: TextAlign.center,
-                ),
+        automaticallyImplyLeading: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                "Document capturé. En cours de traitement. Patientez.",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+                textAlign: TextAlign.center,
               ),
-              SizedBox(
-                height: 40,
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
+            ),
+            SizedBox(
+              height: 40,
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.white),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

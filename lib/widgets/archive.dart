@@ -37,41 +37,39 @@ class _ArchiveState extends State<Archive> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: Text("Archives"),
-          automaticallyImplyLeading: true,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Expanded(
-                child: Focus(
-                  autofocus: true,
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemBuilder: (BuildContext context, int index) {
-                      return ArchiveItem(
-                        filePath: filesList[index].path,
-                        onUpdate: _onUpdate,
-                      );
-                    },
-                    separatorBuilder: (BuildContext context, int index) {
-                      return SizedBox(height: 20);
-                    },
-                    itemCount: filesList.length,
-                  ),
+        title: Text("Archives"),
+        automaticallyImplyLeading: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Expanded(
+              child: Focus(
+                autofocus: true,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemBuilder: (BuildContext context, int index) {
+                    return ArchiveItem(
+                      filePath: filesList[index].path,
+                      onUpdate: _onUpdate,
+                    );
+                  },
+                  separatorBuilder: (BuildContext context, int index) {
+                    return SizedBox(height: 20);
+                  },
+                  itemCount: filesList.length,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

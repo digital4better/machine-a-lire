@@ -490,42 +490,40 @@ class VisionState extends State<Vision>
 
     final scale = 1 / ratio;
 
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: Text("Scan de document"),
-          automaticallyImplyLeading: true,
-        ),
-        body: Center(
-          child: Transform.scale(
-            scale: scale,
-            child: CustomPaint(
-              foregroundPainter: QuadPainter(
-                quad: _previousQuad,
-                draw: !_currentQuad.isEmpty,
-                alpha: 255,
-              ),
-              child: _cameraController != null &&
-                      _cameraController!.value.isInitialized
-                  ? CameraPreview(_cameraController!)
-                  : Container(),
-            ),
-          ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: takePictureForAnalyse,
-          backgroundColor: Colors.white,
-          child: Semantics(
-            hint: "Prendre une photo manuellement",
-            child: Icon(
-              Icons.camera_alt,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text("Scan de document"),
+        automaticallyImplyLeading: true,
       ),
+      body: Center(
+        child: Transform.scale(
+          scale: scale,
+          child: CustomPaint(
+            foregroundPainter: QuadPainter(
+              quad: _previousQuad,
+              draw: !_currentQuad.isEmpty,
+              alpha: 255,
+            ),
+            child: _cameraController != null &&
+                    _cameraController!.value.isInitialized
+                ? CameraPreview(_cameraController!)
+                : Container(),
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: takePictureForAnalyse,
+        backgroundColor: Colors.white,
+        child: Semantics(
+          hint: "Prendre une photo manuellement",
+          child: Icon(
+            Icons.camera_alt,
+            color: Colors.black,
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
