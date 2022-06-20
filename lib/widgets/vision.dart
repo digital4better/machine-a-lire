@@ -100,7 +100,7 @@ Future sendReceive(SendPort port, msg) {
 
 class VisionState extends State<Vision>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  final num widthDetectionThreshold = 0.75;
+  final num widthDetectionThreshold = 0.6;
   late String _imagesRootPath;
   late ReceivePort _receivePort;
   late SendPort _sendPort;
