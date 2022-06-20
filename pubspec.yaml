@@ -28,6 +28,7 @@ dependencies:
     path: native_opencv
   ffi: ^1.1.2
   path_provider: ^2.0.5
+  shared_preferences: ^2.0.15
   flutter_tesseract_ocr:
     git:
       url: https://github.com/VincentD4b/tesseract_ocr.git
