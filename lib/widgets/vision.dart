@@ -141,10 +141,7 @@ class VisionState extends State<Vision>
     _cameraController!.setFlashMode(FlashMode.torch);
 
     isTalking = true;
-    Speech()
-        .speak(
-            "Scan de document en cours, présentez un document devant l’appareil.")
-        .then((e) {
+    Speech().speak("Présentez un document devant l’appareil.").then((e) {
       Future.delayed(const Duration(seconds: 1), () {
         isTalking = false;
       });
@@ -174,7 +171,7 @@ class VisionState extends State<Vision>
     if (isTalking == false) {
       isTalking = true;
       Speech().speak("Aucun document détecté").then((e) {
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 2), () {
           isTalking = false;
         });
       });
@@ -212,14 +209,13 @@ class VisionState extends State<Vision>
 
     //print("widthPercent" + widthPercent.toString());
     if (widthPercent > widthDetectionThreshold) {
-      if (isTalking == false) {
-        isTalking = true;
-        Speech().speak("Ne bougez plus, document détecté").then((e) {
-          Future.delayed(const Duration(seconds: 1), () {
-            isTalking = false;
-          });
+      isTalking = true;
+      Speech().speak("Ne bougez plus, document détecté").then((e) {
+        Future.delayed(const Duration(seconds: 1), () {
+          isTalking = false;
         });
-      }
+      });
+
       if (!isChecking) {
         isChecking = true;
         detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
@@ -232,7 +228,7 @@ class VisionState extends State<Vision>
 
     if (widthPercent < widthDetectionThreshold && isTalking == false) {
       isTalking = true;
-      Speech().speak("Rapprochez l'appareil de la feuille").then((e) {
+      Speech().speak("Document trop éloigné, rapprochez vous.").then((e) {
         Future.delayed(const Duration(seconds: 1), () {
           isTalking = false;
         });
