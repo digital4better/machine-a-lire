@@ -15,54 +15,43 @@ class TutorialSection extends StatefulWidget {
 }
 
 class _TutorialSectionState extends State<TutorialSection> {
-  bool isOpened = false;
-
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(
-          onTapHint: isOpened
-              ? widget.sectionTitle + " fermer"
-              : widget.sectionTitle + " ouvrir",
-          child: ElevatedButton(
+        Container(
+          child: Padding(
+            padding: const EdgeInsets.all(10),
             child: Text(
               widget.sectionTitle,
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left,
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 15,
+                fontSize: 18,
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              minimumSize: const Size.fromHeight(30),
-              primary: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                isOpened = !isOpened;
-              });
-            },
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
-        if (isOpened) ...[
-          Container(
-            decoration: BoxDecoration(
-              border: Border.symmetric(
-                vertical: BorderSide(color: Colors.white),
-              ),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            margin: EdgeInsets.only(top: 5, bottom: 30),
-            child: Text(
-              widget.sectionText,
-              style: TextStyle(color: Colors.white),
+        Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: Colors.white, width: 1),
             ),
           ),
-        ]
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          margin: EdgeInsets.only(top: 5, bottom: 30),
+          child: Text(
+            widget.sectionText,
+            style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ),
       ],
     );
   }

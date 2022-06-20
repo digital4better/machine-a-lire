@@ -7,11 +7,13 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:malo/components/button.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuadPainter extends CustomPainter {
   QuadPainter({this.quad, required this.draw, required this.alpha});
@@ -382,12 +384,61 @@ class VisionState extends State<Vision>
   }
 
   Future _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("hasInitialPopUpBeenShown") == null) {
+      await _initialPopUp(prefs);
+    }
     await _initIsolatePort();
     await _initCamera();
     await _initTicker();
 
     await _startQuadDetection();
     setState(() {});
+  }
+
+  Future _initialPopUp(SharedPreferences prefs) async {
+    await prefs.setBool("hasInitialPopUpBeenShown", true);
+
+    showDialog(
+      context: context,
+      useSafeArea: true,
+      barrierColor: Colors.white.withAlpha(210),
+      builder: (context) {
+        return SimpleDialog(
+            backgroundColor: Colors.black,
+            elevation: 1,
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            title: Text("Conseils d'utilisation", textAlign: TextAlign.center),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 20,
+            ),
+            children: [
+              Text(
+                """
+Le scanner va essayer de détecter une feuille en entier grâce à la caméra dorsale de votre appareil.\n
+Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez scanner.\n
+Quand une feuille sera détectée le téléphone vibrera pour vous indiquer qu'une feuille est actuellement détecté par votre appareil.\n 
+Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne distance pour que le scan se déclenche automatiquement.\n 
+Des conseils audio seront là pour vous aider à viser votre document.\n
+Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt de celui-ci.
+                """,
+                style: TextStyle(color: Colors.white),
+                textAlign: TextAlign.left,
+              ),
+              Button(
+                buttonText: "Fermer",
+                buttonOnPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ]);
+      },
+    );
   }
 
   Future _initImagesPath() async {

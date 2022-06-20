@@ -26,16 +26,16 @@ class Help extends StatelessWidget {
                     TutorialSection(
                       sectionTitle: 'Qu\'est ce que MALO ?',
                       sectionText:
-                          'MALO est une application permettant nottamment aux personnes mal-voyantes de scanner un document papier, et de lire son texte à voix haute.',
+                          'MALO est une application permettant aux personnes mal voyantes, non voyantes, ou ayant des troubles de lecture (dyslexie, ...) de scanner un document, et de le lire à voix haute.',
                     ),
                     TutorialSection(
                         sectionTitle: 'Comment scanner un document ?',
                         sectionText:
-                            'Pour scanner un document, lancez un nouveau scan, puis placez la feuille face au téléphone. Des vibrations vous indiquent si le document n\'est pas bien cadré. Quand le document est bien lisible, une photo est prise, et une analyse est lancée. Après quelques secondes, le texte imprimé est alors affiché à l\'écran de votre téléphone.'),
+                            'Pour scanner un document, lancez un nouveau scan, puis placez la feuille face au téléphone. Des vibrations vous guideront, plus le document est bien cadré, plus les vibrations seront rapprochées. Quand le document est bien lisible, une photo est prise, et une analyse est lancée. Après quelques secondes, le texte est alors affiché à l\'écran.'),
                     TutorialSection(
-                        sectionTitle: 'Historique des scans',
+                        sectionTitle: 'Archives des scans',
                         sectionText:
-                            'Vous pouvez retrouver dans l\'historique les documents que vous avez sauvegardé. Depuis l\'historique, vous pouvez lire, supprimer ou encore renommer un scan'),
+                            'Vous pouvez retrouver dans l\'archive les documents que vous avez sauvegardé. Depuis l\'archive, vous pouvez lire, supprimer ou encore renommer un scan'),
                     TutorialSection(
                         sectionTitle:
                             'Le texte détécté est incorrect, que faire ?',
