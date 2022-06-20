@@ -398,7 +398,7 @@ class VisionState extends State<Vision>
       context,
       MaterialPageRoute(
         builder: (context) {
-          return Narrator(warpedFileName);
+          return Narrator(warpedPath);
         },
       ),
     );
