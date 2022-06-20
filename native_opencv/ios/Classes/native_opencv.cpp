@@ -208,6 +208,11 @@ struct Detection *detect_quad_from_shot(char *path, int32_t width, int32_t heigh
 
     cv::Mat original = cv::imread(path);
 
+    double factor = 320.0 / width;
+    width *= factor;
+    height *= factor;
+    cv::resize(original, original, cv::Size(), factor, factor);
+
     cv::Mat gray, hsv;
     cv::Mat channels[3];
 
@@ -271,6 +276,11 @@ void warp_image(uint8_t *buf, int32_t width, int32_t height, double tl_x, double
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
 void warp_shot(int32_t width, int32_t height, double tl_x, double tl_y, double tr_x, double tr_y, double br_x, double br_y, double bl_x, double bl_y, char *path) {
     cv::Mat original = cv::imread(path);
+
+    double factor = 1080.0 / width;
+    width *= factor;
+    height *= factor;
+    cv::resize(original, original, cv::Size(), factor, factor);
 
     cv::Mat warped, gray;
     cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
