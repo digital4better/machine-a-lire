@@ -66,6 +66,10 @@ class NarratorState extends State<Narrator> {
             },
           );
 
+    if (!widget.isTextExtracted) {
+      Speech().speak("Texte prêt à la lecture.");
+    }
+
     setState(() {
       _text = text
           .replaceAllMapped(RegExp(r"\s*([,;.:?!])(?:\s*[,;.:?!])*\s*"),

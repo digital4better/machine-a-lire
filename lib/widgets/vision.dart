@@ -313,6 +313,8 @@ class VisionState extends State<Vision>
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection();
 
+    Speech().speak("Document scanné en cours d'analyse. Patientez.");
+
     BGRImage picture = cameraImageToBGRBytes(_lastCameraImage!);
 
     // Save warped file somewhere on the phone.
