@@ -51,24 +51,38 @@ class _ArchiveState extends State<Archive> {
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.max,
           children: [
-            Expanded(
-              child: Focus(
-                autofocus: true,
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemBuilder: (BuildContext context, int index) {
-                    return ArchiveItem(
-                      filePath: filesList[index].path,
-                      onUpdate: _onUpdate,
-                    );
-                  },
-                  separatorBuilder: (BuildContext context, int index) {
-                    return SizedBox(height: 20);
-                  },
-                  itemCount: filesList.length,
+            if(!filesList.isEmpty) ...[
+              Expanded(
+                child: Focus(
+                  autofocus: true,
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemBuilder: (BuildContext context, int index) {
+                      return ArchiveItem(
+                        filePath: filesList[index].path,
+                        onUpdate: _onUpdate,
+                      );
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return SizedBox(height: 20);
+                    },
+                    itemCount: filesList.length,
+                  ),
                 ),
               ),
-            ),
+            ] else ... [
+              Expanded(
+                child: Container()
+              ),
+              Text(
+                "Aucun document archivé.",
+                style: TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              Expanded(
+                  child: Container()
+              ),
+            ]
           ],
         ),
       ),
