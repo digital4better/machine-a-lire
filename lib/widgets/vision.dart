@@ -12,6 +12,8 @@ import 'package:malo/widgets/analyse.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class QuadPainter extends CustomPainter {
   QuadPainter({this.quad, required this.draw, required this.alpha});
@@ -382,12 +384,52 @@ class VisionState extends State<Vision>
   }
 
   Future _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    if(prefs.getBool("hasInitialPopUpBeenShown") == null){
+      await _initialPopUp(prefs);
+    }
     await _initIsolatePort();
     await _initCamera();
     await _initTicker();
 
     await _startQuadDetection();
     setState(() {});
+  }
+
+  Future _initialPopUp(SharedPreferences prefs) async {
+    await prefs.setBool("hasInitialPopUpBeenShown", true);
+
+    showDialog(
+      context: context,
+      useSafeArea: true,
+      barrierColor: Colors.white.withAlpha(210),
+      builder: (context) {
+        return SimpleDialog(
+          backgroundColor: Colors.black,
+          elevation: 1,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          title: Column(
+            children: [
+              Text("Scan de document", textAlign: TextAlign.center),
+            ],
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 20,
+          ),
+          children: [
+            Text(
+              "la fréquence des vibrations vous indique si vous êtes proche du document. Des indications vocales vous permettent aussi de vous reperer",
+              style: TextStyle(color: Colors.white),
+            ),
+          ]
+        );
+      },
+    );
   }
 
   Future _initImagesPath() async {
