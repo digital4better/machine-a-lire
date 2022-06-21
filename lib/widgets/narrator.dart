@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import 'package:malo/components/backButton.dart';
+import 'package:malo/components/button.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/saveScan.dart';
 
@@ -94,33 +96,31 @@ class NarratorState extends State<Narrator> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Text("Lecture du document"),
-        automaticallyImplyLeading: true,
+        leading: MaloBackButton(),
       ),
       body: _text.isNotEmpty
           ? SingleChildScrollView(
               controller: _controller,
               child: Padding(
-                padding: const EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 20,
-                  bottom: 60,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(
-                    _text.length,
-                    (i) => Padding(
-                      key: _text[i].key,
-                      padding: EdgeInsets.only(bottom: PADDING),
-                      child: Text(
-                        _text[i].text,
-                        style: TextStyle(
-                          fontSize: 20.0,
-                          fontWeight:
-                              _index == i ? FontWeight.w800 : FontWeight.w400,
-                          color: Colors.white,
-                          decoration: TextDecoration.none,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 30, bottom: 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(
+                      _text.length,
+                      (i) => Padding(
+                        key: _text[i].key,
+                        padding: EdgeInsets.only(bottom: PADDING),
+                        child: Text(
+                          _text[i].text,
+                          style: TextStyle(
+                            fontSize: 20.0,
+                            fontWeight:
+                                _index == i ? FontWeight.w800 : FontWeight.w400,
+                            color: Colors.white,
+                            decoration: TextDecoration.none,
+                          ),
                         ),
                       ),
                     ),
@@ -138,36 +138,26 @@ class NarratorState extends State<Narrator> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      "Analyse du texte. Patientez.",
-                      style: TextStyle(color: Colors.white, fontSize: 20),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
                   Icon(
                     Icons.hourglass_top,
                     size: 60,
                     color: Colors.white,
                   ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: Text(
+                      "Document en cours de traitement.\nMerci de patienter.",
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ],
               ),
             ),
       floatingActionButton: !widget.isTextExtracted && _text.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _saveDocument,
-              backgroundColor: Colors.white,
-              child: Semantics(
-                hint: "Sauvegarder le document",
-                child: Icon(
-                  Icons.save,
-                  color: Colors.black,
-                ),
-              ),
-            )
+          ? MaloButton(onPress: _saveDocument, text: "Sauvegarder le document")
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

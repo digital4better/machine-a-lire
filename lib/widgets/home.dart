@@ -17,17 +17,19 @@ class Home extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Image.asset('assets/images/app_splash.png'),
+          Padding(
+            padding: const EdgeInsets.all(40),
+            child: Image.asset('assets/images/app_splash.png'),
+          ),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Button(
-                  textSize: 24,
-                  buttonText: "Scanner un document",
-                  buttonOnPressed: () async {
+                MaloButton(
+                  text: "Numériser un document",
+                  onPress: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -39,10 +41,9 @@ class Home extends StatelessWidget {
                   },
                 ),
                 Padding(padding: EdgeInsets.only(top: 30)),
-                Button(
-                  textSize: 24,
-                  buttonText: "Documents archivés",
-                  buttonOnPressed: () async {
+                MaloButton(
+                  text: "Documents sauvegardés",
+                  onPress: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -54,10 +55,9 @@ class Home extends StatelessWidget {
                   },
                 ),
                 Padding(padding: EdgeInsets.only(top: 30)),
-                Button(
-                  textSize: 24,
-                  buttonText: "Besoin d'aide ?",
-                  buttonOnPressed: () async {
+                MaloButton(
+                  text: "Foire aux question",
+                  onPress: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(

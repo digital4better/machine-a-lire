@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class MaloButton extends StatelessWidget {
-  const MaloButton({
+class MaloOutlinedButton extends StatelessWidget {
+  const MaloOutlinedButton({
     Key? key,
     required this.text,
     required this.onPress,
@@ -15,20 +15,20 @@ class MaloButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: onPress,
       style: ElevatedButton.styleFrom(
-        primary: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(60),
-        ),
+        primary: Colors.black,
+        shape: ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(5),
+            side: BorderSide(color: Colors.white)),
         padding: EdgeInsets.zero,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        padding: const EdgeInsets.all(10),
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.w400,
-            color: Colors.black,
+            color: Colors.white,
           ),
         ),
       ),

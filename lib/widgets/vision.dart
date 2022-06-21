@@ -7,6 +7,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:malo/components/backButton.dart';
 import 'package:malo/components/button.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
@@ -408,11 +409,13 @@ class VisionState extends State<Vision>
     showDialog(
       context: context,
       useSafeArea: true,
+      barrierDismissible: false,
       barrierColor: Colors.white.withAlpha(210),
       builder: (context) {
         return SimpleDialog(
             backgroundColor: Colors.black,
             elevation: 1,
+            insetPadding: EdgeInsets.zero,
             titleTextStyle: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -427,7 +430,7 @@ class VisionState extends State<Vision>
               Text(
                 """
 Le scanner va essayer de détecter une feuille en entier grâce à la caméra dorsale de votre appareil.\n
-Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez scanner.\n
+Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez numériser.\n
 Quand une feuille sera détectée le téléphone vibrera pour vous indiquer qu'une feuille est actuellement détecté par votre appareil.\n 
 Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne distance pour que le scan se déclenche automatiquement.\n 
 Des conseils audio seront là pour vous aider à viser votre document.\n
@@ -436,9 +439,9 @@ Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt d
                 style: TextStyle(color: Colors.white),
                 textAlign: TextAlign.left,
               ),
-              Button(
-                buttonText: "Fermer",
-                buttonOnPressed: () {
+              MaloButton(
+                text: "Fermer",
+                onPress: () {
                   Navigator.of(context).pop();
                 },
               ),
@@ -547,8 +550,8 @@ Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt d
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text("Scan de document"),
-        automaticallyImplyLeading: true,
+        title: Text("Numériser un document"),
+        leading: MaloBackButton(),
       ),
       body: Center(
         child: Transform.scale(
