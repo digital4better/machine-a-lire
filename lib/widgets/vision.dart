@@ -143,10 +143,10 @@ class VisionState extends State<Vision>
     _cameraController!.setFlashMode(FlashMode.torch);
 
     isTalking = true;
-    Speech().speak("Présentez un document devant l’appareil.").then((e) {
-      Future.delayed(const Duration(seconds: 1), () {
-        isTalking = false;
-      });
+    Speech().speak("Présentez un document devant l’appareil.", context);
+
+    Future.delayed(const Duration(seconds: 1), () {
+      isTalking = false;
     });
   }
 
@@ -172,10 +172,9 @@ class VisionState extends State<Vision>
     _resetQuads();
     if (isTalking == false) {
       isTalking = true;
-      Speech().speak("Aucun document détecté").then((e) {
-        Future.delayed(const Duration(seconds: 2), () {
-          isTalking = false;
-        });
+      Speech().speak("Aucun document détecté", context);
+      Future.delayed(const Duration(seconds: 5), () {
+        isTalking = false;
       });
     }
   }
@@ -209,13 +208,11 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    //print("widthPercent" + widthPercent.toString());
     if (widthPercent > widthDetectionThreshold) {
       isTalking = true;
-      Speech().speak("Ne bougez plus, document détecté").then((e) {
-        Future.delayed(const Duration(seconds: 1), () {
-          isTalking = false;
-        });
+      Speech().speak("Ne bougez plus, document détecté", context);
+      Future.delayed(const Duration(seconds: 1), () {
+        isTalking = false;
       });
 
       if (!isChecking) {
@@ -230,10 +227,9 @@ class VisionState extends State<Vision>
 
     if (widthPercent < widthDetectionThreshold && isTalking == false) {
       isTalking = true;
-      Speech().speak("Document trop éloigné, rapprochez vous.").then((e) {
-        Future.delayed(const Duration(seconds: 1), () {
-          isTalking = false;
-        });
+      Speech().speak("Document trop éloigné, rapprochez vous.", context);
+      Future.delayed(const Duration(seconds: 5), () {
+        isTalking = false;
       });
     }
   }
@@ -311,7 +307,7 @@ class VisionState extends State<Vision>
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection();
 
-    Speech().speak("Document scanné en cours d'analyse. Patientez.");
+    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
 
     BGRImage picture = cameraImageToBGRBytes(_lastCameraImage!);
 
@@ -338,6 +334,8 @@ class VisionState extends State<Vision>
     await _stopQuadDetection(isKeepFlashOn: true);
     XFile picture = await _cameraController!.takePicture();
     await _cameraController!.setFlashMode(FlashMode.off);
+
+    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
 
     // Save raw picture file somewhere on the phone.
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();

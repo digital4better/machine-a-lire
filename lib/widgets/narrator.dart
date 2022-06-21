@@ -50,7 +50,6 @@ class NarratorState extends State<Narrator> {
 
   @override
   void dispose() {
-    Speech().stop();
     super.dispose();
   }
 
@@ -67,7 +66,7 @@ class NarratorState extends State<Narrator> {
           );
 
     if (!widget.isTextExtracted) {
-      Speech().speak("Texte prêt à la lecture.");
+      Speech().speak("Texte prêt à la lecture.", context);
     }
 
     setState(() {

@@ -1,26 +1,22 @@
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/material.dart';
+
+String lastSnackBarMessage = "";
 
 class Speech {
-  static final Speech _instance = Speech._internal();
-  late FlutterTts _tts;
+  speak(String text, context) {
+    if (text != lastSnackBarMessage) {
+      ScaffoldMessenger.of(context).clearSnackBars();
 
-  factory Speech() {
-    return _instance;
+      lastSnackBarMessage = text;
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(text, style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.black,
+      ));
+    }
   }
 
-  Speech._internal() {
-    _tts = FlutterTts();
-    _tts.awaitSpeakCompletion(true);
-    _tts.setLanguage('fr');
-    _tts.setVoice({"locale": "fr-FR", "name": "Thomas"});
-    _tts.setSpeechRate(0.5);
-    _tts.awaitSpeakCompletion(true);
+  stop(context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
-
-  Future speak(String text) async {
-    await _tts.stop();
-    return _tts.speak(text);
-  }
-  Future<dynamic> pause() async => _tts.pause();
-  Future<dynamic> stop() async => _tts.stop();
 }

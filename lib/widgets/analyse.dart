@@ -73,7 +73,7 @@ class AnalyseState extends State<Analyse> {
 
     if (quadFromPicture.isEmpty) {
       // No quad found, then try again.
-      await Speech().speak("La détection a échouée. Réesayer.");
+      Speech().speak("La détection a échouée. Réesayer.", context);
 
       Navigator.pushReplacement(
         context,
@@ -105,6 +105,7 @@ class AnalyseState extends State<Analyse> {
   Future _init() async {
     // Then start analyse.
     await _initIsolatePort();
+    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
     _analysePicture();
   }
 
