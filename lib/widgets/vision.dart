@@ -153,6 +153,7 @@ class VisionState extends State<Vision>
   Future _stopQuadDetection({bool isKeepFlashOn = false}) async {
     //alpha = 0;
     _ticker.stop();
+    _stopHapticFeedback();
 
     if (_cameraController != null &&
         _cameraController!.value.isStreamingImages) {
@@ -168,7 +169,6 @@ class VisionState extends State<Vision>
   }
 
   _tickEmptyQuad() {
-    _stopHapticFeedback();
     _resetQuads();
     if (isTalking == false) {
       isTalking = true;
@@ -265,25 +265,35 @@ class VisionState extends State<Vision>
       return null;
     }
 
-    return Duration(
-        milliseconds: widthPercent < 0.25
-            ? 500
-            : widthPercent < 0.5
-                ? 300
-                : widthPercent < 0.6
-                    ? 200
-                    : 100);
+    int delta = (100 - ((widthPercent * 100).toInt())) * 10;
+    return Duration(milliseconds: delta);
   }
 
   /// When user is close to frame correctly the document, haptics feedbacks starts.
   /// The more it vibrates, the better the frame is.
+  DateTime _lastHapticFeedbackTimestamp = DateTime.now();
   Future _startHapticFeedback() async {
-    if (_hapticTimer == null || !_hapticTimer!.isActive) {
-      Duration? duration = _timeBetweenTwoVibrations();
-      if (duration.runtimeType == Duration) {
-        await HapticFeedback.selectionClick();
-        _hapticTimer = Timer(duration!, () {});
+    Duration? duration = _timeBetweenTwoVibrations();
+
+    if (duration is Duration) {
+      DateTime now = DateTime.now();
+
+      if (_hapticTimer != null && _hapticTimer!.isActive) {
+        _hapticTimer!.cancel();
+        int delta = now.difference(_lastHapticFeedbackTimestamp).inMilliseconds;
+        duration =
+            Duration(milliseconds: max(0, duration.inMilliseconds - delta));
+      } else {
+        _lastHapticFeedbackTimestamp = now;
+        HapticFeedback.selectionClick();
       }
+
+      _hapticTimer = Timer(duration, () {
+        _lastHapticFeedbackTimestamp = now;
+        if (!_currentQuad.isEmpty) {
+          HapticFeedback.selectionClick();
+        }
+      });
     }
   }
 
@@ -501,10 +511,7 @@ Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt d
       }
 
       _ticker.dispose();
-
-      if (_hapticTimer != null && _hapticTimer!.isActive) {
-        _hapticTimer!.cancel();
-      }
+      _stopHapticFeedback();
     } catch (e) {
       print(e);
     } finally {
