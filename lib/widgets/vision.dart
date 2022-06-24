@@ -242,19 +242,17 @@ class VisionState extends State<Vision>
       if(isTalking == false){
         isTalking = true;
         if(numberOfSidesOffscreen > 1){
-          Speech().speak("Veuillez reculer").then((e) {
-            Future.delayed(const Duration(seconds: 1), () {
-              isTalking = false;
-            });
+          Speech().speak("Veuillez reculer", context);
+          Future.delayed(const Duration(seconds: 3), () {
+            isTalking = false;
           });
         } else if (numberOfSidesOffscreen == 1){
           List<String> directions = ["le haut", "la droite", "le bas", "la gauche"];
           for(int i = 0; i < 4; i++){
             if (sidesOffScreen[i]) {
-              Speech().speak("Veuillez décaler l'appareil vers ${directions[i]}").then((e) {
-                Future.delayed(const Duration(seconds: 1), () {
-                  isTalking = false;
-                });
+              Speech().speak("Veuillez décaler l'appareil vers ${directions[i]}", context);
+              Future.delayed(const Duration(seconds: 3), () {
+                isTalking = false;
               });
               break;
             };
@@ -266,10 +264,9 @@ class VisionState extends State<Vision>
     if (widthPercent > widthDetectionThreshold && !_previousQuad.isOnBorder) {
       if (!isTalking) {
         isTalking = true;
-        Speech().speak("Ne bougez plus, document détecté").then((e) {
-          Future.delayed(const Duration(seconds: 1), () {
-            isTalking = false;
-          });
+        Speech().speak("Ne bougez plus, document détecté", context);
+        Future.delayed(const Duration(seconds: 3), () {
+          isTalking = false;
         });
       }
 
