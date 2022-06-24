@@ -15,54 +15,33 @@ class TutorialSection extends StatefulWidget {
 }
 
 class _TutorialSectionState extends State<TutorialSection> {
-  bool isOpened = false;
-
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(
-          onTapHint: isOpened
-              ? widget.sectionTitle + " fermer"
-              : widget.sectionTitle + " ouvrir",
-          child: ElevatedButton(
-            child: Text(
-              widget.sectionTitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 15,
-              ),
+        Padding(
+          padding: const EdgeInsets.all(10),
+          child: Text(
+            widget.sectionTitle,
+            textAlign: TextAlign.left,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 22,
             ),
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              minimumSize: const Size.fromHeight(30),
-              primary: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                isOpened = !isOpened;
-              });
-            },
           ),
         ),
-        if (isOpened) ...[
-          Container(
-            decoration: BoxDecoration(
-              border: Border.symmetric(
-                vertical: BorderSide(color: Colors.white),
-              ),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            margin: EdgeInsets.only(top: 5, bottom: 30),
-            child: Text(
-              widget.sectionText,
-              style: TextStyle(color: Colors.white),
-            ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          margin: EdgeInsets.only(top: 5, bottom: 50),
+          child: Text(
+            widget.sectionText,
+            style: TextStyle(fontSize: 18, color: Colors.white),
           ),
-        ]
+        ),
       ],
     );
   }

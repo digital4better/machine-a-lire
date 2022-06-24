@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:malo/components/archiveItem.dart';
+import 'package:malo/components/backButton.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Archive extends StatefulWidget {
@@ -41,50 +42,46 @@ class _ArchiveState extends State<Archive> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text("Archives"),
-        automaticallyImplyLeading: true,
+        title: Text("Documents sauvegardés"),
+        leading: MaloBackButton(),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            if(!filesList.isEmpty) ...[
-              Expanded(
-                child: Focus(
-                  autofocus: true,
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemBuilder: (BuildContext context, int index) {
-                      return ArchiveItem(
-                        filePath: filesList[index].path,
-                        onUpdate: _onUpdate,
-                      );
-                    },
-                    separatorBuilder: (BuildContext context, int index) {
-                      return SizedBox(height: 20);
-                    },
-                    itemCount: filesList.length,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          if (!filesList.isEmpty) ...[
+            Expanded(
+              child: Scrollbar(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 50.0,
                   ),
+                  shrinkWrap: true,
+                  itemBuilder: (BuildContext context, int index) {
+                    return ArchiveItem(
+                      filePath: filesList[index].path,
+                      onUpdate: _onUpdate,
+                    );
+                  },
+                  separatorBuilder: (BuildContext context, int index) {
+                    return SizedBox(height: 20);
+                  },
+                  itemCount: filesList.length,
                 ),
               ),
-            ] else ... [
-              Expanded(
-                child: Container()
-              ),
-              Text(
-                "Aucun document archivé.",
-                style: TextStyle(color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
-              Expanded(
-                  child: Container()
-              ),
-            ]
-          ],
-        ),
+            ),
+          ] else ...[
+            Expanded(child: Container()),
+            Text(
+              "Aucun document sauvegardé.",
+              style: TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            Expanded(child: Container()),
+          ]
+        ],
       ),
     );
   }

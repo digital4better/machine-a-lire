@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:malo/components/backButton.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:malo/widgets/vision.dart';
@@ -73,7 +74,7 @@ class AnalyseState extends State<Analyse> {
 
     if (quadFromPicture.isEmpty) {
       // No quad found, then try again.
-      await Speech().speak("La détection a échouée. Réesayer.");
+      Speech().speak("La détection a échouée. Réesayer.", context);
 
       Navigator.pushReplacement(
         context,
@@ -132,7 +133,7 @@ class AnalyseState extends State<Analyse> {
           label:
               "Analyse du document. Document capturé. En cours de traitement. Patientez.",
         ),
-        automaticallyImplyLeading: true,
+        leading: MaloBackButton(),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -141,18 +142,17 @@ class AnalyseState extends State<Analyse> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Icon(
+              Icons.hourglass_top,
+              size: 60,
+              color: Colors.white,
+            ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(top: 20),
               child: Text(
-                "Document capturé. En cours de traitement. Patientez.",
+                "Document en cours de traitement.\nMerci de patienter.",
                 style: TextStyle(color: Colors.white, fontSize: 20),
                 textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(
-              height: 40,
-              child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
               ),
             ),
           ],

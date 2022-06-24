@@ -7,13 +7,14 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:malo/components/backButton.dart';
+import 'package:malo/components/button.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 
 class QuadPainter extends CustomPainter {
   QuadPainter({this.quad, required this.draw, required this.alpha});
@@ -102,7 +103,7 @@ Future sendReceive(SendPort port, msg) {
 
 class VisionState extends State<Vision>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  final num widthDetectionThreshold = 0.75;
+  final num widthDetectionThreshold = 0.6;
   late String _imagesRootPath;
   late ReceivePort _receivePort;
   late SendPort _sendPort;
@@ -143,19 +144,17 @@ class VisionState extends State<Vision>
     _cameraController!.setFlashMode(FlashMode.torch);
 
     isTalking = true;
-    Speech()
-        .speak(
-            "Scan de document en cours, présentez un document devant l’appareil.")
-        .then((e) {
-      Future.delayed(const Duration(seconds: 1), () {
-        isTalking = false;
-      });
+    Speech().speak("Présentez un document devant l’appareil.", context);
+
+    Future.delayed(const Duration(seconds: 1), () {
+      isTalking = false;
     });
   }
 
   Future _stopQuadDetection({bool isKeepFlashOn = false}) async {
     //alpha = 0;
     _ticker.stop();
+    _stopHapticFeedback();
 
     if (_cameraController != null &&
         _cameraController!.value.isStreamingImages) {
@@ -171,14 +170,12 @@ class VisionState extends State<Vision>
   }
 
   _tickEmptyQuad() {
-    _stopHapticFeedback();
     _resetQuads();
     if (isTalking == false) {
       isTalking = true;
-      Speech().speak("Aucun document détecté").then((e) {
-        Future.delayed(const Duration(seconds: 1), () {
-          isTalking = false;
-        });
+      Speech().speak("Aucun document détecté", context);
+      Future.delayed(const Duration(seconds: 5), () {
+        isTalking = false;
       });
     }
   }
@@ -275,6 +272,7 @@ class VisionState extends State<Vision>
           });
         });
       }
+
       if (!isChecking) {
         isChecking = true;
         detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
@@ -287,10 +285,9 @@ class VisionState extends State<Vision>
 
     if (widthPercent < widthDetectionThreshold && isTalking == false && !_previousQuad.isOnBorder) {
       isTalking = true;
-      Speech().speak("Rapprochez l'appareil de la feuille").then((e) {
-        Future.delayed(const Duration(seconds: 1), () {
-          isTalking = false;
-        });
+      Speech().speak("Document trop éloigné, rapprochez vous.", context);
+      Future.delayed(const Duration(seconds: 5), () {
+        isTalking = false;
       });
     }
   }
@@ -326,25 +323,35 @@ class VisionState extends State<Vision>
       return null;
     }
 
-    return Duration(
-        milliseconds: widthPercent < 0.25
-            ? 500
-            : widthPercent < 0.5
-                ? 300
-                : widthPercent < 0.6
-                    ? 200
-                    : 100);
+    int delta = (100 - ((widthPercent * 100).toInt())) * 10;
+    return Duration(milliseconds: delta);
   }
 
   /// When user is close to frame correctly the document, haptics feedbacks starts.
   /// The more it vibrates, the better the frame is.
+  DateTime _lastHapticFeedbackTimestamp = DateTime.now();
   Future _startHapticFeedback() async {
-    if (_hapticTimer == null || !_hapticTimer!.isActive) {
-      Duration? duration = _timeBetweenTwoVibrations();
-      if (duration.runtimeType == Duration) {
-        await HapticFeedback.selectionClick();
-        _hapticTimer = Timer(duration!, () {});
+    Duration? duration = _timeBetweenTwoVibrations();
+
+    if (duration is Duration) {
+      DateTime now = DateTime.now();
+
+      if (_hapticTimer != null && _hapticTimer!.isActive) {
+        _hapticTimer!.cancel();
+        int delta = now.difference(_lastHapticFeedbackTimestamp).inMilliseconds;
+        duration =
+            Duration(milliseconds: max(0, duration.inMilliseconds - delta));
+      } else {
+        _lastHapticFeedbackTimestamp = now;
+        HapticFeedback.selectionClick();
       }
+
+      _hapticTimer = Timer(duration, () {
+        _lastHapticFeedbackTimestamp = now;
+        if (!_currentQuad.isEmpty) {
+          HapticFeedback.selectionClick();
+        }
+      });
     }
   }
 
@@ -367,6 +374,8 @@ class VisionState extends State<Vision>
   Future takePictureForAnalyseForIos() async {
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection();
+
+    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
 
     BGRImage picture = cameraImageToBGRBytes(_lastCameraImage!);
 
@@ -393,6 +402,8 @@ class VisionState extends State<Vision>
     await _stopQuadDetection(isKeepFlashOn: true);
     XFile picture = await _cameraController!.takePicture();
     await _cameraController!.setFlashMode(FlashMode.off);
+
+    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
 
     // Save raw picture file somewhere on the phone.
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
@@ -439,7 +450,7 @@ class VisionState extends State<Vision>
 
   Future _init() async {
     final prefs = await SharedPreferences.getInstance();
-    if(prefs.getBool("hasInitialPopUpBeenShown") == null){
+    if (prefs.getBool("hasInitialPopUpBeenShown") == null) {
       await _initialPopUp(prefs);
     }
     await _initIsolatePort();
@@ -456,32 +467,43 @@ class VisionState extends State<Vision>
     showDialog(
       context: context,
       useSafeArea: true,
+      barrierDismissible: false,
       barrierColor: Colors.white.withAlpha(210),
       builder: (context) {
         return SimpleDialog(
-          backgroundColor: Colors.black,
-          elevation: 1,
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-          title: Column(
-            children: [
-              Text("Scan de document", textAlign: TextAlign.center),
-            ],
-          ),
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
-          ),
-          children: [
-            Text(
-              "la fréquence des vibrations vous indique si vous êtes proche du document. Des indications vocales vous permettent aussi de vous reperer",
-              style: TextStyle(color: Colors.white),
+            backgroundColor: Colors.black,
+            elevation: 1,
+            insetPadding: EdgeInsets.zero,
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-          ]
-        );
+            title: Text("Conseils d'utilisation", textAlign: TextAlign.center),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 20,
+            ),
+            children: [
+              Text(
+                """
+Le scanner va essayer de détecter une feuille en entier grâce à la caméra dorsale de votre appareil.\n
+Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez numériser.\n
+Quand une feuille sera détectée le téléphone vibrera pour vous indiquer qu'une feuille est actuellement détecté par votre appareil.\n 
+Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne distance pour que le scan se déclenche automatiquement.\n 
+Des conseils audio seront là pour vous aider à viser votre document.\n
+Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt de celui-ci.
+                """,
+                style: TextStyle(color: Colors.white),
+                textAlign: TextAlign.left,
+              ),
+              MaloButton(
+                text: "Fermer",
+                onPress: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ]);
       },
     );
   }
@@ -550,10 +572,7 @@ class VisionState extends State<Vision>
       }
 
       _ticker.dispose();
-
-      if (_hapticTimer != null && _hapticTimer!.isActive) {
-        _hapticTimer!.cancel();
-      }
+      _stopHapticFeedback();
     } catch (e) {
       print(e);
     } finally {
@@ -589,8 +608,8 @@ class VisionState extends State<Vision>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text("Scan de document"),
-        automaticallyImplyLeading: true,
+        title: Text("Numériser un document"),
+        leading: MaloBackButton(),
       ),
       body: Center(
         child: Transform.scale(
