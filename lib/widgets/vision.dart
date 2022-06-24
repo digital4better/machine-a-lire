@@ -180,6 +180,29 @@ class VisionState extends State<Vision>
     }
   }
 
+  bool checkBorder( Point point1, Point point2) {
+    if(
+      point1.y < 0.05 && point2.y < 0.05 ||
+      point1.y > 0.95 && point2.y > 0.95 ||
+      point1.x < 0.05 && point2.x < 0.05 ||
+      point1.x > 0.95 && point2.x > 0.95
+    ){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  List<bool> _detectSidesOnBorder() {
+    bool right = checkBorder(_previousQuad.topRight, _previousQuad.topLeft);
+    bool left = checkBorder(_previousQuad.bottomRight, _previousQuad.bottomLeft);
+    bool bottom = checkBorder(_previousQuad.topRight, _previousQuad.bottomRight);
+    bool top = checkBorder(_previousQuad.topLeft, _previousQuad.bottomLeft);
+
+    List<bool> sidesOnBorder = [top, right, bottom, left];
+    return sidesOnBorder;
+  }
+
   _tickDetectedQuad() {
     _startHapticFeedback();
 
@@ -209,24 +232,58 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    if (widthPercent > widthDetectionThreshold) {
-      isTalking = true;
-      Speech().speak("Ne bougez plus, document détecté", context);
-      Future.delayed(const Duration(seconds: 1), () {
-        isTalking = false;
-      });
+    if(_previousQuad.isOnBorder){
+      List<bool> sidesOffScreen = _detectSidesOnBorder();
+      int numberOfSidesOffscreen = 0;
+      for(bool element in sidesOffScreen) {
+        if(element)numberOfSidesOffscreen++;
+      }
+
+      if(isTalking == false){
+        isTalking = true;
+        if(numberOfSidesOffscreen > 1){
+          Speech().speak("Veuillez reculer").then((e) {
+            Future.delayed(const Duration(seconds: 1), () {
+              isTalking = false;
+            });
+          });
+        } else if (numberOfSidesOffscreen == 1){
+          List<String> directions = ["le haut", "la droite", "le bas", "la gauche"];
+          for(int i = 0; i < 4; i++){
+            if (sidesOffScreen[i]) {
+              Speech().speak("Veuillez décaler l'appareil vers ${directions[i]}").then((e) {
+                Future.delayed(const Duration(seconds: 1), () {
+                  isTalking = false;
+                });
+              });
+              break;
+            };
+          }
+        }
+      }
+    }
+
+    if (widthPercent > widthDetectionThreshold && !_previousQuad.isOnBorder) {
+      if (!isTalking) {
+        isTalking = true;
+        Speech().speak("Ne bougez plus, document détecté").then((e) {
+          Future.delayed(const Duration(seconds: 1), () {
+            isTalking = false;
+          });
+        });
+      }
 
       if (!isChecking) {
         isChecking = true;
         detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
-            _previousQuad.bottomRight, _previousQuad.bottomLeft);
+            _previousQuad.bottomRight, _previousQuad.bottomLeft, _previousQuad.isOnBorder);
         Future.delayed(const Duration(milliseconds: 500), () {
           checkIfQuadIsStable(0);
         });
       }
     }
 
-    if (widthPercent < widthDetectionThreshold && isTalking == false) {
+    if (widthPercent < widthDetectionThreshold && isTalking == false && !_previousQuad.isOnBorder) {
       isTalking = true;
       Speech().speak("Document trop éloigné, rapprochez vous.", context);
       Future.delayed(const Duration(seconds: 5), () {
@@ -356,6 +413,7 @@ class VisionState extends State<Vision>
     // Save copy of raw file somewhere on the phone. That copy will be used for warp stuff.
     String warpedFileName = "${timestamp}-warpedPicture.png";
     String warpedPath = _imagesRootPath + "/$warpedFileName";
+
     await picture.saveTo(warpedPath);
 
     _resetQuads();

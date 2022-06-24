@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include<list>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -13,10 +14,11 @@ struct Detection {
     double y3;
     double x4;
     double y4;
+    bool isOnBorder;
 };
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
-struct Detection *create_detection(std::vector<cv::Point> &quad, int width, int height) {
+struct Detection *create_detection(std::vector<cv::Point> &quad, int width, int height, bool isOnBorder) {
     struct Detection *detection = (struct Detection *)malloc(sizeof(struct Detection));
     detection->x1 = (double) quad[0].x / width;
     detection->y1 = (double) quad[0].y / height;
@@ -26,6 +28,7 @@ struct Detection *create_detection(std::vector<cv::Point> &quad, int width, int 
     detection->y3 = (double) quad[2].y / height;
     detection->x4 = (double) quad[3].x / width;
     detection->y4 = (double) quad[3].y / height;
+    detection->isOnBorder = (bool) isOnBorder;
     return detection;
 }
 
@@ -44,13 +47,39 @@ void prepare(cv::Mat &in) {
 }
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
+bool check_if_point_on_edge(int x, int y, int width, int height) {
+    if(
+        x < 0.05*width ||
+        x > 0.95*width ||
+        y < 0.05*height ||
+        y > 0.95*height
+    ){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+extern "C" __attribute__((visibility("default"))) __attribute__((used))
 struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height) {
     std::vector<std::vector<cv::Point>> contours;
+
+    cv::line(image, cv::Point(0,0), cv::Point(width, 0), 255, 5);
+    cv::line(image, cv::Point(width,0), cv::Point(width, height), 255, 5);
+    cv::line(image, cv::Point(width,height), cv::Point(0, height), 255, 5);
+    cv::line(image, cv::Point(0,height), cv::Point(0, 0), 255, 5);
+
     cv::findContours(image, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
     std::vector<cv::Point> approx;
     std::vector<cv::Point> quad;
     float quadArea = 0;
+    float border;
+    bool isPoint0OnEdge;
+    bool isPoint1OnEdge;
+    bool isPoint2OnEdge;
+    bool isPoint3OnEdge;
+    int upperLeftPoint;
     for (const auto & contour : contours) {
         cv::approxPolyDP(cv::Mat(contour), approx, cv::arcLength(cv::Mat(contour), true) * 0.02, true);
         float area = std::fabs(cv::contourArea(cv::Mat(approx))) / (width * height);
@@ -58,13 +87,18 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
         if (approx.size() == 4 && area > 0.2 && area < 0.8 && cv::isContourConvex(cv::Mat(approx))) {
             double maxCosine = 0;
             for (int j = 2; j < 5; j++) {
-                cv::Point pt1 = approx[j % 4];
+                cv::Point pt0 = approx[j % 4];
+                cv::Point pt1 = approx[j - 1];
                 cv::Point pt2 = approx[j - 2];
-                cv::Point pt0 = approx[j - 1];
-                double dx1 = pt1.x - pt0.x;
-                double dy1 = pt1.y - pt0.y;
-                double dx2 = pt2.x - pt0.x;
-                double dy2 = pt2.y - pt0.y;
+                cv::Point pt3 = approx[j - 3];
+                isPoint0OnEdge = check_if_point_on_edge(pt0.x, pt0.y, width, height);
+                isPoint1OnEdge = check_if_point_on_edge(pt1.x, pt1.y, width, height);
+                isPoint2OnEdge = check_if_point_on_edge(pt2.x, pt2.y, width, height);
+                isPoint3OnEdge = check_if_point_on_edge(pt3.x, pt3.y, width, height);
+                double dx1 = pt0.x - pt1.x;
+                double dy1 = pt0.y - pt1.y;
+                double dx2 = pt2.x - pt1.x;
+                double dy2 = pt2.y - pt1.y;
                 double cosine = std::fabs((dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10));
                 maxCosine = MAX(maxCosine, cosine);
             }
@@ -74,8 +108,14 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
             }
         }
     }
+
+    bool isOnBorder;
+    if(isPoint0OnEdge || isPoint1OnEdge || isPoint2OnEdge || isPoint3OnEdge){
+        isOnBorder = true;
+    } else { isOnBorder = false; }
+
     if (quadArea > 0) {
-        return create_detection(quad, width, height);
+        return create_detection(quad, width, height, isOnBorder);
     }
     return nullptr;
 }
@@ -156,8 +196,7 @@ struct Detection *detect_quad_by_lines(cv::Mat &image, int width, int height) {
         }
     }
     if (quadArea > 0) {
-        //return create_detection(quad, width, height);
-        return create_detection(quad, width - width/4, height + height/4);
+        return create_detection(quad, width, height, false);
     }
     return nullptr;
 }
@@ -269,8 +308,6 @@ void warp_image(uint8_t *buf, int32_t width, int32_t height, double tl_x, double
     cv::adaptiveThreshold(warped, warped, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 21, 10);
 
     cv::imwrite(path, warped);
-
-    printf("Warped image ! %s", path);
 }
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
@@ -309,8 +346,6 @@ void warp_shot(int32_t width, int32_t height, double tl_x, double tl_y, double t
     cv::adaptiveThreshold(warped, warped, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 21, 10);
 
     cv::imwrite(path, warped);
-
-    printf("Warped image ! %s", path);
 }
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
