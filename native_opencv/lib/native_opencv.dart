@@ -34,6 +34,9 @@ class Detection extends Struct {
 
   @Double()
   external double y4;
+
+  @Bool()
+  external bool isOnBorder;
 }
 
 final Pointer<Detection> Function(Pointer<Uint8> buf, int width, int height)
@@ -219,11 +222,12 @@ class Quad {
   Point topRight;
   Point bottomLeft;
   Point bottomRight;
+  bool isOnBorder;
 
-  Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
+  Quad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft, this.isOnBorder);
 
   static Quad empty = Quad(const Point(0, 0), const Point(0, 0),
-      const Point(0, 0), const Point(0, 0));
+      const Point(0, 0), const Point(0, 0), false);
 
   static Quad from(Detection? d) {
     if (d == null) {
@@ -241,7 +245,7 @@ class Quad {
     lefts.sort((a, b) => a.y.compareTo(b.y));
     rights.sort((a, b) => a.y.compareTo(b.y));
 
-    return Quad(lefts[0], rights[0], rights[1], lefts[1]);
+    return Quad(lefts[0], rights[0], rights[1], lefts[1], d.isOnBorder);
   }
 
   bool get isEmpty =>
