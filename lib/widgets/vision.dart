@@ -9,10 +9,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:malo/components/backButton.dart';
 import 'package:malo/components/button.dart';
+import 'package:malo/opencv.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/analyse.dart';
 import 'package:malo/widgets/narrator.dart';
-import 'package:native_opencv/native_opencv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -7,7 +7,7 @@ import 'package:malo/components/backButton.dart';
 import 'package:malo/services/speech.dart';
 import 'package:malo/widgets/narrator.dart';
 import 'package:malo/widgets/vision.dart';
-import 'package:native_opencv/native_opencv.dart';
+import 'package:malo/opencv.dart';
 
 class Analyse extends StatefulWidget {
   Analyse(this.imagePath);
