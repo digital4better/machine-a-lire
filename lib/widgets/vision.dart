@@ -118,6 +118,7 @@ class VisionState extends State<Vision>
   Quad _currentQuad = Quad.empty;
   Quad _previousQuad = Quad.empty;
   Timer? _hapticTimer;
+  Timer? _vocalTimer;
 
   // QUAD DETECTION FUNCTIONS //
   Future _startQuadDetection() async {
@@ -232,7 +233,7 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    if(_previousQuad.isOnBorder){
+    /*if(_previousQuad.isOnBorder){
       List<bool> sidesOffScreen = _detectSidesOnBorder();
       int numberOfSidesOffscreen = 0;
       for(bool element in sidesOffScreen) {
@@ -259,16 +260,16 @@ class VisionState extends State<Vision>
           }
         }
       }
-    }
+    }*/
 
     if (widthPercent > widthDetectionThreshold && !_previousQuad.isOnBorder) {
-      if (!isTalking) {
+      /*if (!isTalking) {
         isTalking = true;
         Speech().speak("Ne bougez plus, document détecté", context);
         Future.delayed(const Duration(seconds: 3), () {
           isTalking = false;
         });
-      }
+      }*/
 
       if (!isChecking) {
         isChecking = true;
@@ -280,13 +281,13 @@ class VisionState extends State<Vision>
       }
     }
 
-    if (widthPercent < widthDetectionThreshold && isTalking == false && !_previousQuad.isOnBorder) {
+    /*if (widthPercent < widthDetectionThreshold && isTalking == false && !_previousQuad.isOnBorder) {
       isTalking = true;
       Speech().speak("Document trop éloigné, rapprochez vous.", context);
       Future.delayed(const Duration(seconds: 5), () {
         isTalking = false;
       });
-    }
+    }*/
   }
 
   void checkIfQuadIsStable(int timesCheck) {
@@ -442,6 +443,7 @@ class VisionState extends State<Vision>
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     super.initState();
+    _vocalTimer = Timer.periodic(Duration(seconds: 3), (Timer t) => Speech.getSpeech);
     _init();
   }
 
