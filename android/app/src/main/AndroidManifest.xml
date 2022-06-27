@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.digital4better.malo">
-   <application
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <application
         android:label="Machine à Lire"
         android:icon="@mipmap/ic_launcher">
         <activity
