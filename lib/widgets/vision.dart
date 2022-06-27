@@ -170,14 +170,15 @@ class VisionState extends State<Vision>
   }
 
   _tickEmptyQuad() {
-    _resetQuads();
-    if (isTalking == false) {
+    if(isTalking == false){
       isTalking = true;
-      Speech().speak("Aucun document détecté");
-      Future.delayed(const Duration(seconds: 5), () {
-        isTalking = false;
+      Speech().speak(getSpeech(_previousQuad, 0)).then((e){
+        Future.delayed(const Duration(seconds: 4), () {
+          isTalking = false;
+        });
       });
     }
+    _resetQuads();
   }
 
   bool checkBorder(Point point1, Point point2) {
@@ -203,6 +204,41 @@ class VisionState extends State<Vision>
     return sidesOnBorder;
   }
 
+  String getSpeech(Quad quad, num widthPercent) {
+
+    num widthDetectionThreshold = 0.75;
+
+    if(quad.isEmpty){
+      return "Aucun document détecté";
+    }
+
+    List<bool> sidesOffScreen = _detectSidesOnBorder();
+    int numberOfSidesOffscreen = 0;
+    for(bool element in sidesOffScreen) {
+      if(element)numberOfSidesOffscreen++;
+    }
+
+    if(numberOfSidesOffscreen > 1){
+      return "Reculez";
+    }
+    if(numberOfSidesOffscreen == 1){
+      List<String> directions = ["en haut", "à droite", "en bas", "à gauche"];
+      for(int i = 0; i < 4; i++){
+        if (sidesOffScreen[i]) {
+          return "Plus ${directions[i]}";
+        };
+      }
+    }
+    if(numberOfSidesOffscreen == 0){
+      if (widthPercent > widthDetectionThreshold) {
+        return "Ne bougez plus, document détecté";
+      } else {
+        return "Rapprochez l'appareil";
+      }
+    }
+    return "ERREUR";
+  }
+
   _tickDetectedQuad() {
     _startHapticFeedback();
 
@@ -223,6 +259,7 @@ class VisionState extends State<Vision>
 
     // TODO add vocal instructions
     // TODO add movement detection for better capture
+
     num widthPercent;
     if (Platform.isAndroid) {
       widthPercent = min(_previousQuad.bottomRight.y - _previousQuad.topRight.y,
@@ -232,78 +269,32 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    if (_previousQuad.isOnBorder) {
-      List<bool> sidesOffScreen = _detectSidesOnBorder();
-      int numberOfSidesOffscreen = 0;
-      for (bool element in sidesOffScreen) {
-        if (element) numberOfSidesOffscreen++;
-      }
-
-      if (isTalking == false) {
-        isTalking = true;
-        if (numberOfSidesOffscreen > 1) {
-          Speech().speak("Veuillez reculer");
-          Future.delayed(const Duration(seconds: 3), () {
-            isTalking = false;
-          });
-        } else if (numberOfSidesOffscreen == 1) {
-          List<String> directions = [
-            "le haut",
-            "la droite",
-            "le bas",
-            "la gauche"
-          ];
-          for (int i = 0; i < 4; i++) {
-            if (sidesOffScreen[i]) {
-              Speech()
-                  .speak("Veuillez décaler l'appareil vers ${directions[i]}");
-              Future.delayed(const Duration(seconds: 3), () {
-                isTalking = false;
-              });
-              break;
-            }
-            ;
-          }
-        }
-      }
-    }
-
-    if (widthPercent > widthDetectionThreshold && !_previousQuad.isOnBorder) {
-      if (!isTalking) {
-        isTalking = true;
-        Speech().speak("Ne bougez plus, document détecté");
+    if(isTalking == false){
+      isTalking = true;
+      Speech().speak(getSpeech(_previousQuad, widthPercent)).then((e){
         Future.delayed(const Duration(seconds: 3), () {
           isTalking = false;
         });
-      }
+      });
+    }
 
-      if (!isChecking) {
+    if (widthPercent > widthDetectionThreshold && !isChecking) {
+      if(!_detectSidesOnBorder().contains(true)){
         isChecking = true;
         detectedQuad = Quad(
           _previousQuad.topLeft,
           _previousQuad.topRight,
           _previousQuad.bottomRight,
           _previousQuad.bottomLeft,
-          _previousQuad.isOnBorder,
         );
         Future.delayed(const Duration(milliseconds: 500), () {
           checkIfQuadIsStable(0);
         });
       }
     }
-
-    if (widthPercent < widthDetectionThreshold &&
-        isTalking == false &&
-        !_previousQuad.isOnBorder) {
-      isTalking = true;
-      Speech().speak("Document trop éloigné, rapprochez vous.");
-      Future.delayed(const Duration(seconds: 5), () {
-        isTalking = false;
-      });
-    }
   }
 
-  void checkIfQuadIsStable(int timesCheck) {
+  void checkIfQuadIsStable(int iteration) {
     if ((_previousQuad.topLeft.x - detectedQuad.topLeft.x).abs() < 0.05 &&
         (_previousQuad.topLeft.y - detectedQuad.topLeft.y).abs() < 0.05 &&
         (_previousQuad.topRight.x - detectedQuad.topRight.x).abs() < 0.05 &&
@@ -314,10 +305,10 @@ class VisionState extends State<Vision>
             0.05 &&
         (_previousQuad.bottomRight.y - detectedQuad.bottomRight.y).abs() <
             0.05) {
-      timesCheck == 5
+      iteration == 5
           ? takePictureForAnalyse()
           : Future.delayed(const Duration(milliseconds: 500), () {
-              checkIfQuadIsStable(timesCheck + 1);
+              checkIfQuadIsStable(iteration + 1);
             });
     } else {
       isChecking = false;

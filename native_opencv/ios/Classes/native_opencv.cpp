@@ -14,11 +14,10 @@ struct Detection {
     double y3;
     double x4;
     double y4;
-    bool isOnBorder;
 };
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
-struct Detection *create_detection(std::vector<cv::Point> &quad, int width, int height, bool isOnBorder) {
+struct Detection *create_detection(std::vector<cv::Point> &quad, int width, int height) {
     struct Detection *detection = (struct Detection *)malloc(sizeof(struct Detection));
     detection->x1 = (double) quad[0].x / width;
     detection->y1 = (double) quad[0].y / height;
@@ -28,7 +27,6 @@ struct Detection *create_detection(std::vector<cv::Point> &quad, int width, int 
     detection->y3 = (double) quad[2].y / height;
     detection->x4 = (double) quad[3].x / width;
     detection->y4 = (double) quad[3].y / height;
-    detection->isOnBorder = (bool) isOnBorder;
     return detection;
 }
 
@@ -47,20 +45,6 @@ void prepare(cv::Mat &in) {
 }
 
 extern "C" __attribute__((visibility("default"))) __attribute__((used))
-bool check_if_point_on_edge(int x, int y, int width, int height) {
-    if(
-        x < 0.05*width ||
-        x > 0.95*width ||
-        y < 0.05*height ||
-        y > 0.95*height
-    ){
-        return true;
-    } else {
-        return false;
-    }
-}
-
-extern "C" __attribute__((visibility("default"))) __attribute__((used))
 struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height) {
     std::vector<std::vector<cv::Point>> contours;
 
@@ -75,10 +59,6 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
     std::vector<cv::Point> quad;
     float quadArea = 0;
     float border;
-    bool isPoint0OnEdge;
-    bool isPoint1OnEdge;
-    bool isPoint2OnEdge;
-    bool isPoint3OnEdge;
     int upperLeftPoint;
     for (const auto & contour : contours) {
         cv::approxPolyDP(cv::Mat(contour), approx, cv::arcLength(cv::Mat(contour), true) * 0.02, true);
@@ -91,10 +71,6 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
                 cv::Point pt1 = approx[j - 1];
                 cv::Point pt2 = approx[j - 2];
                 cv::Point pt3 = approx[j - 3];
-                isPoint0OnEdge = check_if_point_on_edge(pt0.x, pt0.y, width, height);
-                isPoint1OnEdge = check_if_point_on_edge(pt1.x, pt1.y, width, height);
-                isPoint2OnEdge = check_if_point_on_edge(pt2.x, pt2.y, width, height);
-                isPoint3OnEdge = check_if_point_on_edge(pt3.x, pt3.y, width, height);
                 double dx1 = pt0.x - pt1.x;
                 double dy1 = pt0.y - pt1.y;
                 double dx2 = pt2.x - pt1.x;
@@ -109,13 +85,8 @@ struct Detection *detect_quad_by_contours(cv::Mat &image, int width, int height)
         }
     }
 
-    bool isOnBorder;
-    if(isPoint0OnEdge || isPoint1OnEdge || isPoint2OnEdge || isPoint3OnEdge){
-        isOnBorder = true;
-    } else { isOnBorder = false; }
-
     if (quadArea > 0) {
-        return create_detection(quad, width, height, isOnBorder);
+        return create_detection(quad, width, height);
     }
     return nullptr;
 }
@@ -196,7 +167,7 @@ struct Detection *detect_quad_by_lines(cv::Mat &image, int width, int height) {
         }
     }
     if (quadArea > 0) {
-        return create_detection(quad, width, height, false);
+        return create_detection(quad, width, height);
     }
     return nullptr;
 }
