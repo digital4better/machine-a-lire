@@ -68,7 +68,7 @@ class NarratorState extends State<Narrator> {
           );
 
     if (!widget.isTextExtracted) {
-      Speech().speak("Texte prêt à la lecture.", context);
+      Speech().speak("Texte prêt à la lecture.");
     }
 
     setState(() {

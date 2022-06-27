@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
-
-String lastSnackBarMessage = "";
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 
 class Speech {
-  speak(String text, context) {
-    if (text != lastSnackBarMessage) {
-      ScaffoldMessenger.of(context).clearSnackBars();
+  speak(String text) async {
+    final AnnounceSemanticsEvent event = AnnounceSemanticsEvent(
+      text,
+      TextDirection.ltr,
+    );
 
-      lastSnackBarMessage = text;
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(text, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-      ));
-    }
-  }
-
-  stop(context) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    await SystemChannels.accessibility.send(event.toMap());
   }
 }

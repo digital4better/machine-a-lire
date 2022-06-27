@@ -144,7 +144,7 @@ class VisionState extends State<Vision>
     _cameraController!.setFlashMode(FlashMode.torch);
 
     isTalking = true;
-    Speech().speak("Présentez un document devant l’appareil.", context);
+    Speech().speak("Présentez un document devant l’appareil.");
 
     Future.delayed(const Duration(seconds: 1), () {
       isTalking = false;
@@ -173,20 +173,18 @@ class VisionState extends State<Vision>
     _resetQuads();
     if (isTalking == false) {
       isTalking = true;
-      Speech().speak("Aucun document détecté", context);
+      Speech().speak("Aucun document détecté");
       Future.delayed(const Duration(seconds: 5), () {
         isTalking = false;
       });
     }
   }
 
-  bool checkBorder( Point point1, Point point2) {
-    if(
-      point1.y < 0.05 && point2.y < 0.05 ||
-      point1.y > 0.95 && point2.y > 0.95 ||
-      point1.x < 0.05 && point2.x < 0.05 ||
-      point1.x > 0.95 && point2.x > 0.95
-    ){
+  bool checkBorder(Point point1, Point point2) {
+    if (point1.y < 0.05 && point2.y < 0.05 ||
+        point1.y > 0.95 && point2.y > 0.95 ||
+        point1.x < 0.05 && point2.x < 0.05 ||
+        point1.x > 0.95 && point2.x > 0.95) {
       return true;
     } else {
       return false;
@@ -195,8 +193,10 @@ class VisionState extends State<Vision>
 
   List<bool> _detectSidesOnBorder() {
     bool right = checkBorder(_previousQuad.topRight, _previousQuad.topLeft);
-    bool left = checkBorder(_previousQuad.bottomRight, _previousQuad.bottomLeft);
-    bool bottom = checkBorder(_previousQuad.topRight, _previousQuad.bottomRight);
+    bool left =
+        checkBorder(_previousQuad.bottomRight, _previousQuad.bottomLeft);
+    bool bottom =
+        checkBorder(_previousQuad.topRight, _previousQuad.bottomRight);
     bool top = checkBorder(_previousQuad.topLeft, _previousQuad.bottomLeft);
 
     List<bool> sidesOnBorder = [top, right, bottom, left];
@@ -232,30 +232,37 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    if(_previousQuad.isOnBorder){
+    if (_previousQuad.isOnBorder) {
       List<bool> sidesOffScreen = _detectSidesOnBorder();
       int numberOfSidesOffscreen = 0;
-      for(bool element in sidesOffScreen) {
-        if(element)numberOfSidesOffscreen++;
+      for (bool element in sidesOffScreen) {
+        if (element) numberOfSidesOffscreen++;
       }
 
-      if(isTalking == false){
+      if (isTalking == false) {
         isTalking = true;
-        if(numberOfSidesOffscreen > 1){
-          Speech().speak("Veuillez reculer", context);
+        if (numberOfSidesOffscreen > 1) {
+          Speech().speak("Veuillez reculer");
           Future.delayed(const Duration(seconds: 3), () {
             isTalking = false;
           });
-        } else if (numberOfSidesOffscreen == 1){
-          List<String> directions = ["le haut", "la droite", "le bas", "la gauche"];
-          for(int i = 0; i < 4; i++){
+        } else if (numberOfSidesOffscreen == 1) {
+          List<String> directions = [
+            "le haut",
+            "la droite",
+            "le bas",
+            "la gauche"
+          ];
+          for (int i = 0; i < 4; i++) {
             if (sidesOffScreen[i]) {
-              Speech().speak("Veuillez décaler l'appareil vers ${directions[i]}", context);
+              Speech()
+                  .speak("Veuillez décaler l'appareil vers ${directions[i]}");
               Future.delayed(const Duration(seconds: 3), () {
                 isTalking = false;
               });
               break;
-            };
+            }
+            ;
           }
         }
       }
@@ -264,7 +271,7 @@ class VisionState extends State<Vision>
     if (widthPercent > widthDetectionThreshold && !_previousQuad.isOnBorder) {
       if (!isTalking) {
         isTalking = true;
-        Speech().speak("Ne bougez plus, document détecté", context);
+        Speech().speak("Ne bougez plus, document détecté");
         Future.delayed(const Duration(seconds: 3), () {
           isTalking = false;
         });
@@ -272,17 +279,24 @@ class VisionState extends State<Vision>
 
       if (!isChecking) {
         isChecking = true;
-        detectedQuad = Quad(_previousQuad.topLeft, _previousQuad.topRight,
-            _previousQuad.bottomRight, _previousQuad.bottomLeft, _previousQuad.isOnBorder);
+        detectedQuad = Quad(
+          _previousQuad.topLeft,
+          _previousQuad.topRight,
+          _previousQuad.bottomRight,
+          _previousQuad.bottomLeft,
+          _previousQuad.isOnBorder,
+        );
         Future.delayed(const Duration(milliseconds: 500), () {
           checkIfQuadIsStable(0);
         });
       }
     }
 
-    if (widthPercent < widthDetectionThreshold && isTalking == false && !_previousQuad.isOnBorder) {
+    if (widthPercent < widthDetectionThreshold &&
+        isTalking == false &&
+        !_previousQuad.isOnBorder) {
       isTalking = true;
-      Speech().speak("Document trop éloigné, rapprochez vous.", context);
+      Speech().speak("Document trop éloigné, rapprochez vous.");
       Future.delayed(const Duration(seconds: 5), () {
         isTalking = false;
       });
@@ -372,7 +386,7 @@ class VisionState extends State<Vision>
     // Stop preview stream and take a picture from camera.
     await _stopQuadDetection();
 
-    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
+    Speech().speak("Document scanné en cours d'analyse. Patientez.");
 
     BGRImage picture = cameraImageToBGRBytes(_lastCameraImage!);
 
@@ -400,7 +414,7 @@ class VisionState extends State<Vision>
     XFile picture = await _cameraController!.takePicture();
     await _cameraController!.setFlashMode(FlashMode.off);
 
-    Speech().speak("Document scanné en cours d'analyse. Patientez.", context);
+    Speech().speak("Document scanné en cours d'analyse. Patientez.");
 
     // Save raw picture file somewhere on the phone.
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();

@@ -74,7 +74,7 @@ class AnalyseState extends State<Analyse> {
 
     if (quadFromPicture.isEmpty) {
       // No quad found, then try again.
-      Speech().speak("La détection a échouée. Réesayer.", context);
+      Speech().speak("La détection a échouée. Réesayer.");
 
       Navigator.pushReplacement(
         context,
