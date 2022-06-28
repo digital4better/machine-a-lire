@@ -505,12 +505,12 @@ class VisionState extends State<Vision>
                 children: [
                   Text(
                     """
-Le scanner va essayer de détecter document grâce à la caméra dorsale de votre appareil.\n
-Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez numériser.\n
-Quand un  document sera détecté le téléphone vibrera pour vous l'indiquer.\n 
-Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne distance pour que le scan se déclenche automatiquement.\n 
-Des conseils audio seront là pour vous aider à viser votre document.\n
-Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt de celui-ci.
+Le scanner va essayer de détecter document grâce à la caméra dorsale de votre appareil.\n 
+Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez numériser.\n 
+Quand un document sera détecté le téléphone vibrera pour vous l'indiquer.\n  
+Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne distance pour que le scan se déclenche automatiquement.\n  
+Des conseils audios seront là pour vous aider à viser votre document.\n 
+Si votre appareil ne détecte aucun document, vous êtes peut-être trop prêt de celui-ci.
                       """,
                     style: TextStyle(color: Colors.white),
                     textAlign: TextAlign.left,

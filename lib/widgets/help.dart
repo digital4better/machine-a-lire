@@ -32,18 +32,21 @@ class Help extends StatelessWidget {
                             'MALO est une application permettant aux personnes mal voyantes, non voyantes, ou ayant des troubles de lecture de numériser un document, pour pouvoir le restituer à voix haute (grâce à TalkBack ou VoiceOver).',
                       ),
                       TutorialSection(
-                          sectionTitle: 'Comment numériser un document ?',
-                          sectionText:
-                              'Pour numériser un nouveau document, appuyez sur le bouton du menu d\'accueil nommé "Numériser un document". \nEnsuite, placez votre document en face de votre appareil.\nDes vibrations vous guideront, plus le document est bien cadré, plus les vibrations seront rapprochées.\Quand le document est bien lisible, une analyse est lancée. Après quelques secondes, le texte est alors affiché à l\'écran.'),
+                        sectionTitle: 'Comment numériser un document ?',
+                        sectionText:
+                            'Pour numériser un nouveau document, appuyez sur le bouton du menu d\'accueil nommé "Numériser un document". \nEnsuite, placez votre document en face de votre appareil.\nDes vibrations vous guideront, plus le document est bien cadré, plus les vibrations seront rapprochées.\Quand le document est bien lisible, une analyse est lancée. Après quelques secondes, le texte est alors affiché à l\'écran.',
+                      ),
                       TutorialSection(
-                          sectionTitle: 'Documents sauvegardés',
-                          sectionText:
-                              'Vous pouvez retrouver les documents que vous avez sauvegardé depuis le bouton du menu d\'accueil nommé "Documents sauvegardés". Depuis ce menu, vous pouvez lire, renommer ou supprimer un document.'),
+                        sectionTitle: 'Documents sauvegardés',
+                        sectionText:
+                            'Vous pouvez retrouver les documents que vous avez sauvegardé depuis le bouton du menu d\'accueil nommé "Documents sauvegardés". Depuis ce menu, vous pouvez lire, renommer ou supprimer un document.',
+                      ),
                       TutorialSection(
-                          sectionTitle:
-                              'Le texte détécté est incorrect, que faire ?',
-                          sectionText:
-                              'Si la détection ne fonctionne pas assez bien, assurez vous d\'être bien statique lors de la prise de la photo. Vous pouvez aussi essayer de changer d\'arrière plan pour améliorer le contraste de couleurs.'),
+                        sectionTitle:
+                            'Le texte détecté est incorrect, que faire ?',
+                        sectionText:
+                            'Si la détection ne fonctionne pas assez bien, assurez-vous d\'être bien statique lors de la prise de la photo. Vous pouvez aussi essayer de changer d\'arrière-plan pour améliorer le contraste de couleurs.',
+                      ),
                     ],
                   ),
                 ),
