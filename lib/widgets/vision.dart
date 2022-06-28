@@ -460,14 +460,17 @@ class VisionState extends State<Vision>
 
   Future _init() async {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool("hasInitialPopUpBeenShown") == null) {
-      await _initialPopUp(prefs);
-    }
+
     await _initIsolatePort();
     await _initCamera();
     await _initTicker();
 
-    await _startQuadDetection();
+    if (prefs.getBool("hasInitialPopUpBeenShown") == null) {
+      await _initialPopUp(prefs);
+    } else {
+      await _startQuadDetection();
+    }
+
     setState(() {});
   }
 
@@ -481,39 +484,49 @@ class VisionState extends State<Vision>
       barrierColor: Colors.white.withAlpha(210),
       builder: (context) {
         return SimpleDialog(
-            backgroundColor: Colors.black,
-            elevation: 1,
-            insetPadding: EdgeInsets.zero,
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            title: Text("Conseils d'utilisation", textAlign: TextAlign.center),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 20,
-            ),
-            children: [
-              Text(
-                """
-Le scanner va essayer de détecter une feuille en entier grâce à la caméra dorsale de votre appareil.\n
+          backgroundColor: Colors.black,
+          elevation: 1,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20),
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          title: Text("Conseils d'utilisation", textAlign: TextAlign.center),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 20,
+          ),
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    """
+Le scanner va essayer de détecter document grâce à la caméra dorsale de votre appareil.\n
 Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez numériser.\n
-Quand une feuille sera détectée le téléphone vibrera pour vous indiquer qu'une feuille est actuellement détecté par votre appareil.\n 
+Quand un  document sera détecté le téléphone vibrera pour vous l'indiquer.\n 
 Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne distance pour que le scan se déclenche automatiquement.\n 
 Des conseils audio seront là pour vous aider à viser votre document.\n
 Si votre appareil ne détecte aucun document, vous êtes peut être trop prêt de celui-ci.
-                """,
-                style: TextStyle(color: Colors.white),
-                textAlign: TextAlign.left,
+                      """,
+                    style: TextStyle(color: Colors.white),
+                    textAlign: TextAlign.left,
+                  ),
+                ],
               ),
-              MaloButton(
-                text: "Fermer",
-                onPress: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ]);
+            ),
+            MaloButton(
+              text: "Fermer",
+              onPress: () {
+                Navigator.of(context).pop();
+                _startQuadDetection();
+              },
+            ),
+          ],
+        );
       },
     );
   }
