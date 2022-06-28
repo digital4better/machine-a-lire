@@ -28,6 +28,8 @@ class QuadPainter extends CustomPainter {
     if (this.quad != null && this.draw) {
       late Path path;
       if (Platform.isAndroid) {
+        // Camera plugin issue made camera preview in landscape mode even if we ask for portrait.
+        // So, as a quick fix we switch corners to do the conversion.
         path = Path()
           ..moveTo((1 - this.quad!.topRight.y) * size.width,
               this.quad!.topRight.x * size.height)
@@ -143,12 +145,7 @@ class VisionState extends State<Vision>
     });
     _cameraController!.setFlashMode(FlashMode.torch);
 
-    isTalking = true;
     Speech().speak("Présentez un document devant l’appareil.");
-
-    Future.delayed(const Duration(seconds: 1), () {
-      isTalking = false;
-    });
   }
 
   Future _stopQuadDetection({bool isKeepFlashOn = false}) async {
@@ -169,13 +166,12 @@ class VisionState extends State<Vision>
     }
   }
 
-  _tickEmptyQuad() {
-    if(isTalking == false){
+  _tickEmptyQuad() async {
+    if (isTalking == false) {
       isTalking = true;
-      Speech().speak(getSpeech(_previousQuad, 0)).then((e){
-        Future.delayed(const Duration(seconds: 4), () {
-          isTalking = false;
-        });
+      Speech().speak(getSpeech(_previousQuad, 0));
+      Future.delayed(const Duration(seconds: 4), () {
+        isTalking = false;
       });
     }
     _resetQuads();
@@ -193,43 +189,54 @@ class VisionState extends State<Vision>
   }
 
   List<bool> _detectSidesOnBorder() {
-    bool right = checkBorder(_previousQuad.topRight, _previousQuad.topLeft);
-    bool left =
-        checkBorder(_previousQuad.bottomRight, _previousQuad.bottomLeft);
-    bool bottom =
-        checkBorder(_previousQuad.topRight, _previousQuad.bottomRight);
-    bool top = checkBorder(_previousQuad.topLeft, _previousQuad.bottomLeft);
+    bool right;
+    bool left;
+    bool bottom;
+    bool top;
+
+    if (Platform.isAndroid) {
+      // Camera plugin issue made camera preview in landscape mode even if we ask for portrait.
+      // So, as a quick fix we switch corners to do the conversion.
+      right = checkBorder(_previousQuad.topRight, _previousQuad.topLeft);
+      left = checkBorder(_previousQuad.bottomRight, _previousQuad.bottomLeft);
+      bottom = checkBorder(_previousQuad.topRight, _previousQuad.bottomRight);
+      top = checkBorder(_previousQuad.topLeft, _previousQuad.bottomLeft);
+    } else {
+      top = checkBorder(_previousQuad.topRight, _previousQuad.topLeft);
+      bottom = checkBorder(_previousQuad.bottomRight, _previousQuad.bottomLeft);
+      right = checkBorder(_previousQuad.topRight, _previousQuad.bottomRight);
+      left = checkBorder(_previousQuad.topLeft, _previousQuad.bottomLeft);
+    }
 
     List<bool> sidesOnBorder = [top, right, bottom, left];
     return sidesOnBorder;
   }
 
   String getSpeech(Quad quad, num widthPercent) {
-
     num widthDetectionThreshold = 0.75;
 
-    if(quad.isEmpty){
+    if (quad.isEmpty) {
       return "Aucun document détecté";
     }
 
     List<bool> sidesOffScreen = _detectSidesOnBorder();
     int numberOfSidesOffscreen = 0;
-    for(bool element in sidesOffScreen) {
-      if(element)numberOfSidesOffscreen++;
+    for (bool element in sidesOffScreen) {
+      if (element) numberOfSidesOffscreen++;
     }
 
-    if(numberOfSidesOffscreen > 1){
+    if (numberOfSidesOffscreen > 1) {
       return "Reculez";
     }
-    if(numberOfSidesOffscreen == 1){
+    if (numberOfSidesOffscreen == 1) {
       List<String> directions = ["en haut", "à droite", "en bas", "à gauche"];
-      for(int i = 0; i < 4; i++){
+      for (int i = 0; i < 4; i++) {
         if (sidesOffScreen[i]) {
           return "Plus ${directions[i]}";
-        };
+        }
       }
     }
-    if(numberOfSidesOffscreen == 0){
+    if (numberOfSidesOffscreen == 0) {
       if (widthPercent > widthDetectionThreshold) {
         return "Ne bougez plus, document détecté";
       } else {
@@ -239,7 +246,7 @@ class VisionState extends State<Vision>
     return "ERREUR";
   }
 
-  _tickDetectedQuad() {
+  _tickDetectedQuad() async {
     _startHapticFeedback();
 
     setState(() {
@@ -262,6 +269,8 @@ class VisionState extends State<Vision>
 
     num widthPercent;
     if (Platform.isAndroid) {
+      // Camera plugin issue made camera preview in landscape mode even if we ask for portrait.
+      // So, as a quick fix we switch corners to do the conversion.
       widthPercent = min(_previousQuad.bottomRight.y - _previousQuad.topRight.y,
           _previousQuad.bottomLeft.y - _previousQuad.topLeft.y);
     } else {
@@ -269,17 +278,16 @@ class VisionState extends State<Vision>
           _previousQuad.bottomRight.x - _previousQuad.bottomLeft.x);
     }
 
-    if(isTalking == false){
+    if (isTalking == false) {
       isTalking = true;
-      Speech().speak(getSpeech(_previousQuad, widthPercent)).then((e){
-        Future.delayed(const Duration(seconds: 3), () {
-          isTalking = false;
-        });
+      Speech().speak(getSpeech(_previousQuad, widthPercent));
+      Future.delayed(const Duration(seconds: 3), () {
+        isTalking = false;
       });
     }
 
     if (widthPercent > widthDetectionThreshold && !isChecking) {
-      if(!_detectSidesOnBorder().contains(true)){
+      if (!_detectSidesOnBorder().contains(true)) {
         isChecking = true;
         detectedQuad = Quad(
           _previousQuad.topLeft,
