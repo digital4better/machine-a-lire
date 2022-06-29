@@ -37,7 +37,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>L&apos;utilisation de l&apos;appareil photo est requise</string>
+	<string>L'application utilise la caméra pour pouvoir détecter et scanner vos documents.</string>
 	<key>UIStatusBarHidden</key>
 	<true/>
 </dict>
