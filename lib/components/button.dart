@@ -30,6 +30,7 @@ class MaloButton extends StatelessWidget {
             fontWeight: FontWeight.w400,
             color: Colors.black,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
