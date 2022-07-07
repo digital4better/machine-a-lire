@@ -461,21 +461,21 @@ class VisionState extends State<Vision>
   Future _init() async {
     final prefs = await SharedPreferences.getInstance();
 
+    if (prefs.getBool("hasInitialPopUpBeenShown") == null) {
+      await _initialPopUp(prefs);
+    }
+
     await _initIsolatePort();
     await _initCamera();
     await _initTicker();
-
-    if (prefs.getBool("hasInitialPopUpBeenShown") == null) {
-      await _initialPopUp(prefs);
-    } else {
-      await _startQuadDetection();
-    }
 
     setState(() {});
   }
 
   Future _initialPopUp(SharedPreferences prefs) async {
     await prefs.setBool("hasInitialPopUpBeenShown", true);
+
+    final completer = Completer();
 
     showDialog(
       context: context,
@@ -520,13 +520,15 @@ Si votre appareil ne détecte aucun document, vous êtes peut-être trop prêt d
               text: "Fermer",
               onPress: () {
                 Navigator.of(context).pop();
-                _startQuadDetection();
+                completer.complete();
               },
             ),
           ],
         );
       },
     );
+
+    return completer.future;
   }
 
   Future _initImagesPath() async {
