@@ -498,13 +498,12 @@ class VisionState extends State<Vision>
             vertical: 20,
           ),
           children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    """
+            Column(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  """
 Le scanner va essayer de détecter document grâce à la caméra dorsale de votre appareil.\n 
 Commencer par placer votre téléphone bien au-dessus du document que vous souhaitez numériser.\n 
 Quand un document sera détecté le téléphone vibrera pour vous l'indiquer.\n  
@@ -512,11 +511,10 @@ Plus votre appareil vibrera rapidement, plus vous serez proche de la bonne dista
 Des conseils audios seront là pour vous aider à viser votre document.\n 
 Si votre appareil ne détecte aucun document, vous êtes peut-être trop prêt de celui-ci.
                       """,
-                    style: TextStyle(color: Colors.white),
-                    textAlign: TextAlign.left,
-                  ),
-                ],
-              ),
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.left,
+                ),
+              ],
             ),
             MaloButton(
               text: "Fermer",
