@@ -226,7 +226,7 @@ class VisionState extends State<Vision>
     }
 
     if (numberOfSidesOffscreen > 1) {
-      return "Reculez";
+      return "Éloigner l'appareil";
     }
     if (numberOfSidesOffscreen == 1) {
       List<String> directions = ["en haut", "à droite", "en bas", "à gauche"];
@@ -613,7 +613,7 @@ Si votre appareil ne détecte aucun document, vous êtes peut-être trop prêt d
       if (state == AppLifecycleState.resumed &&
           !_cameraController!.value.isStreamingImages) {
         await _startQuadDetection();
-      } else if (state != AppLifecycleState.resumed){
+      } else if (state != AppLifecycleState.resumed) {
         await _stopQuadDetection();
       }
     }
