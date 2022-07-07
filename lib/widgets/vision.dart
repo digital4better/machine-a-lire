@@ -613,7 +613,7 @@ Si votre appareil ne détecte aucun document, vous êtes peut-être trop prêt d
       if (state == AppLifecycleState.resumed &&
           !_cameraController!.value.isStreamingImages) {
         await _startQuadDetection();
-      } else {
+      } else if (state != AppLifecycleState.resumed){
         await _stopQuadDetection();
       }
     }
