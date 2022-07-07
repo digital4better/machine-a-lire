@@ -469,6 +469,8 @@ class VisionState extends State<Vision>
     await _initCamera();
     await _initTicker();
 
+    await _startQuadDetection();
+
     setState(() {});
   }
 
