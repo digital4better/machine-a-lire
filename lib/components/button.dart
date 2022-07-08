@@ -5,10 +5,12 @@ class MaloButton extends StatelessWidget {
     Key? key,
     required this.text,
     required this.onPress,
+    this.prefixIcon,
   }) : super(key: key);
 
   final String text;
   final VoidCallback onPress;
+  final IconData? prefixIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -23,14 +25,27 @@ class MaloButton extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w400,
-            color: Colors.black,
-          ),
-          textAlign: TextAlign.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (this.prefixIcon != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: const Image(
+                  image: AssetImage("assets/images/heart.png"),
+                  height: 20,
+                ),
+              ),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w400,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

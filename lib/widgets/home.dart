@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:malo/components/button.dart';
 import 'package:malo/widgets/archive.dart';
+import 'package:malo/widgets/donation.dart';
 import 'package:malo/widgets/vision.dart';
 
 import 'help.dart';
@@ -63,6 +64,20 @@ class Home extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) {
                           return Help();
+                        },
+                      ),
+                    );
+                  },
+                ),
+                Padding(padding: EdgeInsets.only(top: 30)),
+                MaloButton(
+                  text: "Faire un don",
+                  onPress: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return Donation();
                         },
                       ),
                     );
