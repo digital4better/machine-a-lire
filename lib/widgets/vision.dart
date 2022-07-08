@@ -264,9 +264,6 @@ class VisionState extends State<Vision>
       }
     });
 
-    // TODO add vocal instructions
-    // TODO add movement detection for better capture
-
     num widthPercent;
     if (Platform.isAndroid) {
       // Camera plugin issue made camera preview in landscape mode even if we ask for portrait.

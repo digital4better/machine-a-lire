@@ -56,7 +56,7 @@ class Home extends StatelessWidget {
                 ),
                 Padding(padding: EdgeInsets.only(top: 30)),
                 MaloButton(
-                  text: "Foire aux question",
+                  text: "Foire aux questions",
                   onPress: () async {
                     await Navigator.push(
                       context,
