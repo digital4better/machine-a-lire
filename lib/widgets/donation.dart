@@ -69,7 +69,7 @@ class Donation extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 50),
                         child: MaloButton(
-                          prefixIcon: Icons.accessibility_sharp,
+                          prefixImage: "assets/images/heart.png",
                           text: "Faire un don",
                           onPress: () async {
                             try {
