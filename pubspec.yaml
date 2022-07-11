@@ -33,6 +33,7 @@ dependencies:
       url: https://github.com/VincentD4b/tesseract_ocr.git
       ref: master
   url_launcher: ^6.0.12
+  in_app_purchase: ^3.0.6
 
 dev_dependencies:
   flutter_test:
