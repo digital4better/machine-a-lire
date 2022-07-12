@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:malo/components/button.dart';
 import 'package:malo/widgets/archive.dart';
 import 'package:malo/widgets/donation.dart';
@@ -70,19 +73,20 @@ class Home extends StatelessWidget {
                   },
                 ),
                 Padding(padding: EdgeInsets.only(top: 30)),
-                MaloButton(
-                  text: "Faire un don",
-                  onPress: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return Donation();
-                        },
-                      ),
-                    );
-                  },
-                ),
+                if (!Platform.isIOS)
+                  MaloButton(
+                    text: "Faire un don",
+                    onPress: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return Donation();
+                          },
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
