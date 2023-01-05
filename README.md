@@ -1,4 +1,4 @@
-#MALO (english)
+# MALO (english)
 
 MALO is an Open Source Reading Machine developed by Digital4Better for ACIAH, an association working
 for the support and inclusion of people with disabilities. The application allows blind or visually
